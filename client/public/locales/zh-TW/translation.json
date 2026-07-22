@@ -478,9 +478,18 @@
         "label": "每頁文章數量"
       },
       "external_links": {
-        "title": "External Links",
-        "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
-        "label": "External Links (JSON)"
+        "title": "外部連結",
+        "desc": "設置在首頁英雄區展示的外部連結，JSON 數組格式。格式: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "外部連結 (JSON)",
+        "count": "{{count}} 個連結",
+        "empty": "未設定",
+        "empty_desc": "暫無外部連結，點擊下方按鈕新增",
+        "delete": "刪除此連結",
+        "placeholder_name": "名稱 (name)",
+        "placeholder_url": "連結 (url)",
+        "placeholder_icon": "圖示 (icon, 如 ri-github-line)",
+        "preview": "預覽:",
+        "add": "新增連結"
       }
     },
     "header_layout": {

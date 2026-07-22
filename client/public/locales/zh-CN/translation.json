@@ -480,7 +480,16 @@
       "external_links": {
         "title": "外部链接",
         "desc": "设置在首页英雄区展示的外部链接，JSON 数组格式。格式: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
-        "label": "外部链接 (JSON)"
+        "label": "外部链接 (JSON)",
+        "count": "{{count}} 个链接",
+        "empty": "未配置",
+        "empty_desc": "暂无外部链接，点击下方按钮添加",
+        "delete": "删除此链接",
+        "placeholder_name": "名称 (name)",
+        "placeholder_url": "链接 (url)",
+        "placeholder_icon": "图标 (icon, 如 ri-github-line)",
+        "preview": "预览:",
+        "add": "添加链接"
       }
     },
     "header_layout": {

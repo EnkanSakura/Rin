@@ -469,9 +469,18 @@
         "label": "1ページあたりの記事数"
       },
       "external_links": {
-        "title": "External Links",
-        "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
-        "label": "External Links (JSON)"
+        "title": "外部リンク",
+        "desc": "ホームページのヘローシクションに表示される外部リンクをJSON配列として設定する. フォーマット: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "外部リンク (JSON)",
+        "count": "{{count}} 個のリンク",
+        "empty": "未設定",
+        "empty_desc": "外部リンクがありません。下のボタンをクリックして追加してください。",
+        "delete": "このリンクを削除",
+        "placeholder_name": "名前 (name)",
+        "placeholder_url": "URL (url)",
+        "placeholder_icon": "アイコン (icon, 例: ri-github-line)",
+        "preview": "プレビュー:",
+        "add": "リンクを追加"
       }
     },
     "header_layout": {
@@ -543,12 +552,12 @@
       "title": "WordPressからインポート"
     },
     "about": {
-      "title": "About",
+      "title": "概要",
       "content": {
-        "title": "About Content",
-        "desc": "Set the about page content displayed on the homepage and /about page. Supports Markdown.",
-        "label": "About Content (Markdown)",
-        "placeholder": "Write your about page content in Markdown..."
+        "title": "概要 コンテンツ",
+        "desc": "ホームページおよび/aboutページに表示される「概要」ページのコンテンツを設定します。Markdownをサポートしています。",
+        "label": "概要 コンテンツ(Markdown)",
+        "placeholder": "Markdownで「概要」ページのコンテンツを記述してください。.."
       }
     }
   },

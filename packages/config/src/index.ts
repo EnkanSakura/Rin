@@ -17,6 +17,7 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "site.name": "Rin",
     "site.description": "A lightweight personal blogging system",
     "site.avatar": "",
+    "nav.links": "[\"feeds\",\"timeline\",\"moments\",\"hashtags\",\"friends\",\"about\"]",
     "site.page_size": 5,
     "site.external_links": "[]",
     "site.about_content": "",

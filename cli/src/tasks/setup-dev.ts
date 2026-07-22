@@ -70,6 +70,10 @@ binding = "DB"
 database_name = "${env.DB_NAME || "rin"}"
 database_id = "local"
 
+[[kv_namespaces]]
+binding = "CONFIG_KV"
+id = "local"
+
 [[queues.producers]]
 binding = "TASK_QUEUE"
 queue = "${env.TASK_QUEUE_NAME || env.AI_SUMMARY_QUEUE_NAME || `${env.WORKER_NAME || "rin-server"}-tasks`}"

@@ -20,7 +20,7 @@ import { FEED_LAYOUT_OPTIONS, normalizeFeedLayout } from "../components/feed-lay
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { applyThemeColor, normalizeThemeColor } from "../utils/theme-color";
 import { AISummarySettings } from "./settings-ai";
-import { ItemButton, ItemImageInput, ItemInput, ItemSwitch, ItemTitle, ItemWithUpload } from "./settings-items";
+import { ItemButton, ItemExternalLinks, ItemImageInput, ItemInput, ItemSwitch, ItemWithUpload } from "./settings-items";
 import {
   areSettingsDraftsEqual,
   buildAIConfigDraftValue,
@@ -56,6 +56,7 @@ export function Settings() {
   const [msg, setMsg] = useState("");
   const [msgList, setMsgList] = useState<{ title: string; reason: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [webhookTestMessage, setWebhookTestMessage] = useState("");
@@ -182,10 +183,36 @@ export function Settings() {
       <Helmet>
         <title>{`${t("settings.title")} - ${siteConfig.name}`}</title>
       </Helmet>
+      {/* Tab Bar */}
+      <div className="mb-4 flex overflow-x-auto rounded-2xl border border-black/10 bg-w p-1 dark:border-white/10">
+        {[
+          { key: "site", label: t("settings.site.title") },
+          { key: "personalization", label: t("settings.personalization.title") },
+          { key: "other", label: t("settings.other.title") },
+          { key: "webhook", label: t("settings.webhook.title") },
+          { key: "friend", label: t("settings.friend.title") },
+          { key: "maintenance", label: t("settings.maintenance.title") },
+        ].map((tab, i) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(i)}
+            className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === i
+                ? "bg-neutral-100 text-black shadow-sm dark:bg-white/10 dark:text-white"
+                : "text-neutral-500 hover:text-black dark:hover:text-white"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
       <main className="w-full rounded-2xl bg-w" aria-label={t("main_content")}>
         <div className="flex flex-col items-start space-y-2">
           {(loading || saving) && <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />}
-          <ItemTitle title={t("settings.site.title")} />
+
+          {activeTab === 0 && (
+          <>
           <ItemInput
             title={t("settings.site.name.title")}
             description={t("settings.site.name.desc")}
@@ -206,12 +233,10 @@ export function Settings() {
               setConfigValue("client", "site.description", value);
             }}
           />
-          <ItemInput
+          <ItemExternalLinks
             title={t("settings.site.external_links.title")}
             description={t("settings.site.external_links.desc")}
-            configKeyTitle={t("settings.site.external_links.label")}
-            value={String(clientConfig.get("site.external_links") ?? "")}
-            placeholder={String(clientConfig.default("site.external_links") ?? "[]")}
+            value={String(clientConfig.get("site.external_links") ?? "[]")}
             onChange={(value) => {
               setConfigValue("client", "site.external_links", value);
             }}
@@ -237,7 +262,6 @@ export function Settings() {
               setConfigValue("client", "site.page_size", value);
             }}
           />
-          <ItemTitle title={t("settings.about.title")} />
           <ItemInput
             title={t("settings.about.content.title")}
             description={t("settings.about.content.desc")}
@@ -248,8 +272,11 @@ export function Settings() {
               setConfigValue("client", "site.about_content", value);
             }}
           />
+          </>
+          )}
 
-          <ItemTitle title={t("settings.personalization.title")} />
+          {activeTab === 1 && (
+          <>
           <div className="w-full">
             <SettingsCard>
               <SettingsCardRow
@@ -444,8 +471,11 @@ export function Settings() {
               </div>
             </SettingsCard>
           </div>
+    </>
+          )}
 
-          <ItemTitle title={t("settings.other.title")} />
+          {activeTab === 2 && (
+          <>
           <ItemSwitch
             title={t("settings.login.enable.title")}
             description={t("settings.login.enable.desc", { url: oauth_url })}
@@ -493,8 +523,11 @@ export function Settings() {
               setConfigValue("client", "footer", value);
             }}
           />
+          </>
+          )}
 
-          <ItemTitle title={t("settings.webhook.title")} />
+          {activeTab === 3 && (
+          <>
           <ItemInput
             title={t("settings.webhook.url.title")}
             description={t("settings.webhook.url.desc")}
@@ -590,8 +623,11 @@ export function Settings() {
               </SettingsCardBody>
             </SettingsCard>
           </div>
+          </>
+          )}
 
-          <ItemTitle title={t("settings.friend.title")} />
+          {activeTab === 4 && (
+          <>
           <ItemSwitch
             title={t("settings.friend.apply.title")}
             description={t("settings.friend.apply.desc")}
@@ -618,8 +654,11 @@ export function Settings() {
               setConfigValue("server", "friend_ua", value);
             }}
           />
+          </>
+          )}
 
-          <ItemTitle title={t("settings.maintenance.title")} />
+          {activeTab === 5 && (
+          <>
           <ItemSwitch
             title={t("settings.cache.enabled.title")}
             description={t("settings.cache.enabled.desc")}
@@ -669,6 +708,8 @@ export function Settings() {
               }
             }}
           />
+          </>
+          )}
 
           {hasUnsavedChanges && (
             <div className="sticky bottom-4 z-20 mt-6 w-full pb-2">

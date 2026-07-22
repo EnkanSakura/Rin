@@ -49,24 +49,20 @@ export const initContainerMiddleware = createMiddleware<{
             return drizzle(c.env.DB, { schema });
         }));
 
-        const cache = await container.get('cache', async () => profileAsync(c, "init_cache", async () => {
-            const { CacheImpl } = await import('../utils/cache');
-            const clientConfig = await container.get('clientConfig', async () => profileAsync(c, "init_client_config", async () => {
-                const { CacheImpl } = await import('../utils/cache');
-                return new CacheImpl(db, c.env, "client.config");
-            }));
-            return new CacheImpl(db, c.env, "cache", undefined, clientConfig);
+        const serverConfig = await container.get('serverConfig', async () => profileAsync(c, "init_server_config", async () => {
+            const { KVConfigImpl } = await import('../utils/kv-config');
+            return new KVConfigImpl(c.env.CONFIG_KV, "server.config");
         }));
 
-        const serverConfig = await container.get('serverConfig', async () => profileAsync(c, "init_server_config", async () => {
-                const { CacheImpl } = await import('../utils/cache');
-                return new CacheImpl(db, c.env, "server.config", "database");
-            }));
-
         const clientConfig = await container.get('clientConfig', async () => profileAsync(c, "init_client_config", async () => {
-                const { CacheImpl } = await import('../utils/cache');
-                return new CacheImpl(db, c.env, "client.config");
-            }));
+            const { KVConfigImpl } = await import('../utils/kv-config');
+            return new KVConfigImpl(c.env.CONFIG_KV, "client.config");
+        }));
+
+        const cache = await container.get('cache', async () => profileAsync(c, "init_cache", async () => {
+            const { CacheImpl } = await import('../utils/cache');
+            return new CacheImpl(db, c.env, "cache", undefined, clientConfig);
+        }));
 
         const jwt = await container.get('jwt', async () => profileAsync(c, "init_jwt", async () => {
             const { default: createJWT } = await import('../utils/jwt');

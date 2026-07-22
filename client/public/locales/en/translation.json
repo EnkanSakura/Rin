@@ -480,7 +480,16 @@
       "external_links": {
         "title": "External Links",
         "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
-        "label": "External Links (JSON)"
+        "label": "External Links (JSON)",
+        "count": "{{count}} links",
+        "empty": "Not configured",
+        "empty_desc": "No external links. Click the button below to add.",
+        "delete": "Delete this link",
+        "placeholder_name": "Name",
+        "placeholder_url": "URL",
+        "placeholder_icon": "Icon (e.g. ri-github-line)",
+        "preview": "Preview:",
+        "add": "Add link"
       }
     },
     "header_layout": {

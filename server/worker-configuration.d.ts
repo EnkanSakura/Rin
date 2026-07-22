@@ -19,6 +19,7 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		DB: D1Database;
+		CONFIG_KV: KVNamespace;
 		ASSETS?: Fetcher;
 		AI: Ai;
 		S3_FOLDER: "images/";
@@ -8785,8 +8786,8 @@ interface BasicImageTransformations {
     gravity?: 'face' | 'left' | 'right' | 'top' | 'bottom' | 'center' | 'auto' | 'entropy' | BasicImageTransformationsGravityCoordinates;
     /**
      * Background color to add underneath the image. Applies only to images with
-     * transparency (such as PNG). Accepts any CSS color (#RRGGBB, rgba(â€¦),
-     * hsl(â€¦), etc.)
+     * transparency (such as PNG). Accepts any CSS color (#RRGGBB, rgba(â€?,
+     * hsl(â€?, etc.)
      */
     background?: string;
     /**

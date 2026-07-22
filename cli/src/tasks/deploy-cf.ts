@@ -248,6 +248,73 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
     `)} >> wrangler.toml`.quiet();
   }
 
+  // Create KV namespace for config storage
+  const configKvName = env("CONFIG_KV_NAME", `${workerName}-config`);
+  const kvCreateResult = await $`${bunExec} x wrangler kv namespace create ${configKvName}`.quiet().nothrow();
+  if (kvCreateResult.exitCode !== 0 && !kvCreateResult.stderr.toString().includes("already exists")) {
+    console.error(`Failed to create KV namespace "${configKvName}"`);
+    console.error(stripIndent(kvCreateResult.stderr.toString()));
+    process.exit(1);
+  }
+
+  const kvListJson = (JSON.parse(await $`${bunExec} x wrangler kv namespace list --json`.quiet().text()) as Array<{ id: string; title: string }>).find(
+    (ns) => ns.title === configKvName,
+  );
+  if (kvListJson) {
+    await $`echo ${stripIndent(`
+      [[kv_namespaces]]
+      binding = "CONFIG_KV"
+      id = "${kvListJson.id}"
+    `)} >> wrangler.toml`.quiet();
+  }
+
+  // Migrate existing config from D1 to KV (if KV is freshly created)
+  if (kvListJson) {
+    console.log("🔄 Migrating existing config from D1 to KV...");
+    const configTypes = ["client.config", "server.config"];
+    for (const configType of configTypes) {
+      try {
+        const result = await $`${bunExec} x wrangler d1 execute ${dbName} --remote --command "SELECT key, value FROM cache WHERE type = '${configType}' ORDER BY key" --json`.quiet().nothrow();
+        if (result.exitCode !== 0) continue;
+
+        const stdout = result.stdout.toString().trim();
+        const jsonStart = stdout.indexOf("[");
+        if (jsonStart < 0) continue;
+
+        const rows = JSON.parse(stdout.slice(jsonStart)) as Array<{ key: string; value: string }>;
+        if (rows.length === 0) {
+          console.log(`  ℹ️  No existing "${configType}" config to migrate`);
+          continue;
+        }
+
+        // Build config object
+        const configObj: Record<string, any> = {};
+        for (const row of rows) {
+          try {
+            configObj[row.key] = JSON.parse(row.value);
+          } catch {
+            configObj[row.key] = row.value;
+          }
+        }
+
+        // Write to KV using temp file to avoid shell escaping issues
+        const tempFile = ".wrangler-config-migration.json";
+        await Bun.write(tempFile, JSON.stringify(configObj));
+        const putResult = await $`${bunExec} x wrangler kv key put ${configType} --namespace-id ${kvListJson.id} --path ${tempFile}`.quiet().nothrow();
+        await Bun.file(tempFile).delete().catch(() => {});
+
+        if (putResult.exitCode === 0) {
+          console.log(`  ✅ Migrated ${rows.length} config keys for "${configType}"`);
+        } else {
+          console.error(`  ❌ Failed to migrate "${configType}": ${putResult.stderr.toString().trim()}`);
+        }
+      } catch (e) {
+        console.warn(`  ⚠️  Migration warning for "${configType}":`, e);
+      }
+    }
+    console.log("✅ Config migration completed");
+  }
+
   await $`echo ${stripIndent(`
     [ai]
     binding = "AI"

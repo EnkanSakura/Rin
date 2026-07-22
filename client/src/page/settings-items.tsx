@@ -189,6 +189,151 @@ export function ItemWithUpload({
   );
 }
 
+// ── External Links (name / url / icon) ───────────────────────────
+
+export interface ExternalLink {
+  name: string;
+  url: string;
+  icon: string;
+}
+
+export function ItemExternalLinks({
+  title,
+  description,
+  value,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
+
+  // Parse current JSON value into an array
+  const links: ExternalLink[] = (() => {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  function updateLinks(newLinks: ExternalLink[]) {
+    onChange(JSON.stringify(newLinks));
+  }
+
+  function addLink() {
+    updateLinks([...links, { name: "", url: "", icon: "" }]);
+  }
+
+  function removeLink(index: number) {
+    const next = links.filter((_, i) => i !== index);
+    updateLinks(next);
+  }
+
+  function updateLink(index: number, field: keyof ExternalLink, val: string) {
+    const next = links.map((link, i) =>
+      i === index ? { ...link, [field]: val } : link,
+    );
+    updateLinks(next);
+  }
+
+  return (
+    <div className="w-full">
+      <SettingsCard>
+        <button
+          type="button"
+          className="block w-full text-left"
+          onClick={() => setIsOpen((c) => !c)}
+        >
+          <SettingsCardRow
+            header={<SettingsCardHeader title={title} description={description} />}
+            action={
+              <div className="flex items-center gap-3">
+                <span className="max-w-56 truncate text-sm text-neutral-500 dark:text-neutral-400">
+                  {links.length > 0
+                    ? t("settings.site.external_links.count", { count: links.length })
+                    : t("settings.site.external_links.empty")}
+                </span>
+                <i
+                  className={`ri-arrow-down-s-line text-lg text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            }
+          />
+        </button>
+        {isOpen && (
+          <SettingsCardBody>
+            <div className="space-y-3">
+              {links.length === 0 && (
+                <p className="text-center text-sm text-neutral-400">{t("settings.site.external_links.empty_desc")}</p>
+              )}
+              {links.map((link, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-black/10 bg-w p-4 dark:border-white/10"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">#{i + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeLink(i)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-red-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                      title={t("settings.site.external_links.delete")}
+                    >
+                      <i className="ri-delete-bin-line text-sm" />
+                    </button>
+                  </div>
+                  <div className="grid gap-2">
+                    <input
+                      type="text"
+                      placeholder={t("settings.site.external_links.placeholder_name")}
+                      value={link.name}
+                      onChange={(e) => updateLink(i, "name", e.target.value)}
+                      className="w-full rounded-lg border border-black/10 bg-w px-3 py-2 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
+                    />
+                    <input
+                      type="text"
+                      placeholder={t("settings.site.external_links.placeholder_url")}
+                      value={link.url}
+                      onChange={(e) => updateLink(i, "url", e.target.value)}
+                      className="w-full rounded-lg border border-black/10 bg-w px-3 py-2 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
+                    />
+                    <input
+                      type="text"
+                      placeholder={t("settings.site.external_links.placeholder_icon")}
+                      value={link.icon}
+                      onChange={(e) => updateLink(i, "icon", e.target.value)}
+                      className="w-full rounded-lg border border-black/10 bg-w px-3 py-2 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-black/20 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:placeholder:text-neutral-500 dark:focus:border-white/20"
+                    />
+                  </div>
+                  {link.icon && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                      <span>{t("settings.site.external_links.preview")}</span>
+                      <i className={`${link.icon} text-base`} />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addLink}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-black/10 py-3 text-sm text-neutral-500 transition-colors hover:border-theme/30 hover:text-theme dark:border-white/10 dark:hover:border-theme/30"
+              >
+                <i className="ri-add-line" />
+                {t("settings.site.external_links.add")}
+              </button>
+            </div>
+          </SettingsCardBody>
+        )}
+      </SettingsCard>
+    </div>
+  );
+}
+
 export function ItemImageInput({
   title,
   description,
