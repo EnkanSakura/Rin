@@ -301,7 +301,7 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
         const tempFile = ".wrangler-config-migration.json";
         await Bun.write(tempFile, JSON.stringify(configObj));
         const putResult = await $`${bunExec} x wrangler kv key put ${configType} --namespace-id ${kvListJson.id} --path ${tempFile}`.quiet().nothrow();
-        await Bun.file(tempFile).delete().catch(() => {});
+        await unlink(tempFile).catch(() => {});
 
         if (putResult.exitCode === 0) {
           console.log(`  ✅ Migrated ${rows.length} config keys for "${configType}"`);
