@@ -45,6 +45,10 @@ runs:
         database_name = "rin"
         database_id = "local"
 
+        [[kv_namespaces]]
+        binding = "CONFIG_KV"
+        id = "local"
+
         [[queues.producers]]
         binding = "TASK_QUEUE"
         queue = "rin-tasks"
