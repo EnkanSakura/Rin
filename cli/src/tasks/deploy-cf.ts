@@ -257,19 +257,66 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
     process.exit(1);
   }
 
-  const kvListJson = (JSON.parse(await $`${bunExec} x wrangler kv namespace list --json`.quiet().text()) as Array<{ id: string; title: string }>).find(
-    (ns) => ns.title === configKvName,
-  );
-  if (kvListJson) {
+  // Extract namespace ID — from creation output if it was just created,
+  // or from the list via the Cloudflare API (wrangler --json not supported in v4.71.0)
+  let configKvId: string | undefined;
+
+  // Try parsing from creation output (succeeds when newly created)
+  const createStdout = kvCreateResult.stdout.toString();
+  const idMatch = createStdout.match(/id\s*=\s*"([^"]+)"/);
+  if (idMatch) {
+    configKvId = idMatch[1];
+  } else {
+    // Fallback: query via Cloudflare API
+    const accountId = renv("CLOUDFLARE_ACCOUNT_ID");
+    const apiToken = renv("CLOUDFLARE_API_TOKEN");
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`,
+        { headers: { Authorization: `Bearer ${apiToken}` } },
+      );
+      const data = await response.json() as { success: boolean; result: Array<{ id: string; title: string }> };
+      if (data.success) {
+        const ns = data.result.find((n) => n.title === configKvName);
+        if (ns) configKvId = ns.id;
+      }
+    } catch (e) {
+      console.warn(`  ⚠️  Could not query KV namespace list via API:`, e);
+    }
+
+    // Last resort: parse wrangler CLI text output (no --json support in wrangler 4.71.0)
+    if (!configKvId) {
+      try {
+        const listResult = await $`${bunExec} x wrangler kv namespace list`.quiet().text();
+        const lines = listResult.split("\n");
+        for (const line of lines) {
+          if (configKvName && line.includes(configKvName)) {
+            // Table columns: │ id │ title │
+            const parts = line.split("│").map((s) => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+              configKvId = parts[0];
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`  ⚠️  Could not query KV namespace list via CLI:`, e);
+      }
+    }
+  }
+
+  if (configKvId) {
     await $`echo ${stripIndent(`
       [[kv_namespaces]]
       binding = "CONFIG_KV"
-      id = "${kvListJson.id}"
+      id = "${configKvId}"
     `)} >> wrangler.toml`.quiet();
+  } else {
+    console.warn(`  ⚠️  Could not resolve KV namespace ID for "${configKvName}". Deploy will likely fail.`);
   }
 
   // Migrate existing config from D1 to KV (if KV is freshly created)
-  if (kvListJson) {
+  if (configKvId) {
     console.log("🔄 Migrating existing config from D1 to KV...");
     const configTypes = ["client.config", "server.config"];
     for (const configType of configTypes) {
@@ -300,7 +347,7 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
         // Write to KV using temp file to avoid shell escaping issues
         const tempFile = ".wrangler-config-migration.json";
         await Bun.write(tempFile, JSON.stringify(configObj));
-        const putResult = await $`${bunExec} x wrangler kv key put ${configType} --namespace-id ${kvListJson.id} --path ${tempFile}`.quiet().nothrow();
+        const putResult = await $`${bunExec} x wrangler kv key put ${configType} --namespace-id ${configKvId!} --path ${tempFile}`.quiet().nothrow();
         await unlink(tempFile).catch(() => {});
 
         if (putResult.exitCode === 0) {
