@@ -36,5 +36,8 @@ dist-ssr
 *.sw?
 /.dev.vars
 
+# Agent Tool
+.deepseek/
+
 # Bun
 .bun/*

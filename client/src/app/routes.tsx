@@ -10,6 +10,7 @@ import { getHeaderLayoutDefinition } from "../components/site-header/layout-regi
 import { Tips, TipsPage } from "../components/tips";
 import useTableOfContents from "../hooks/useTableOfContents";
 import { useSiteConfig } from "../hooks/useSiteConfig";
+import { AboutPage } from "../page/about";
 import { CallbackPage } from "../page/callback";
 import { CompatTasksPage } from "../page/compat-tasks";
 import { ErrorPage } from "../page/error";
@@ -19,6 +20,7 @@ import { FriendsPage } from "../page/friends";
 import { HealthPage } from "../page/health";
 import { HashtagPage } from "../page/hashtag";
 import { HashtagsPage } from "../page/hashtags";
+import { HomePage } from "../page/home";
 import { LoginPage } from "../page/login";
 import { MomentsPage } from "../page/moments";
 import { ProfilePage } from "../page/profile";
@@ -37,6 +39,14 @@ export function AppRoutes() {
   return (
     <Switch>
       <AppRoute path="/">
+        <HomePage />
+      </AppRoute>
+
+      <AppRoute path="/about">
+        <AboutPage />
+      </AppRoute>
+
+      <AppRoute path="/feeds">
         <FeedsPage />
       </AppRoute>
 

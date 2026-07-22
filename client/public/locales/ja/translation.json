@@ -192,7 +192,31 @@
   },
   "github_login": "Github ログイン",
   "hashtags": "ラベル",
-  "home": "ホーム",
+  "home": {
+    "navigation": "Explore",
+    "nav": {
+      "articles": {
+        "title": "Articles",
+        "desc": "View all published articles"
+      },
+      "timeline": {
+        "title": "Timeline",
+        "desc": "Browse articles by date"
+      },
+      "moments": {
+        "title": "Moments",
+        "desc": "Quick thoughts and updates"
+      },
+      "friends": {
+        "title": "Friends",
+        "desc": "Friendly blog links"
+      },
+      "hashtags": {
+        "title": "Tags",
+        "desc": "Browse articles by topic"
+      }
+    }
+  },
   "index": {
     "back": "ホームに戻る",
     "empty": {
@@ -443,6 +467,11 @@
         "title": "ページサイズ",
         "desc": "記事一覧で 1 ページあたりに表示する件数を設定します",
         "label": "1ページあたりの記事数"
+      },
+      "external_links": {
+        "title": "External Links",
+        "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "External Links (JSON)"
       }
     },
     "header_layout": {
@@ -512,6 +541,15 @@
     "wordpress": {
       "desc": "WordPressからエクスポートされたXMLファイルをアップロードする",
       "title": "WordPressからインポート"
+    },
+    "about": {
+      "title": "About",
+      "content": {
+        "title": "About Content",
+        "desc": "Set the about page content displayed on the homepage and /about page. Supports Markdown.",
+        "label": "About Content (Markdown)",
+        "placeholder": "Write your about page content in Markdown..."
+      }
     }
   },
   "sitename": "サイト名",

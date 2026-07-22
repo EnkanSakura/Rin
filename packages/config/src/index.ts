@@ -18,6 +18,8 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "site.description": "A lightweight personal blogging system",
     "site.avatar": "",
     "site.page_size": 5,
+    "site.external_links": "[]",
+    "site.about_content": "",
   }),
 );
 

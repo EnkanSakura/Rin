@@ -1,6 +1,6 @@
 {
   "about": {
-    "notfound": "将文章别名设置为 about 可以创建关于页面",
+    "notfound": "在设置中配置关于内容来创建关于页面",
     "title": "关于"
   },
   "admin": {
@@ -192,7 +192,31 @@
   },
   "github_login": "Github 登录",
   "hashtags": "标签",
-  "home": "首页",
+  "home": {
+    "navigation": "站点导航",
+    "nav": {
+      "articles": {
+        "title": "文章",
+        "desc": "查看所有已发布的文章"
+      },
+      "timeline": {
+        "title": "时间线",
+        "desc": "按时间浏览文章"
+      },
+      "moments": {
+        "title": "动态",
+        "desc": "快速想法和更新"
+      },
+      "friends": {
+        "title": "友链",
+        "desc": "友情博客链接"
+      },
+      "hashtags": {
+        "title": "标签",
+        "desc": "按主题浏览文章"
+      }
+    }
+  },
   "index": {
     "back": "返回首页",
     "empty": {
@@ -452,6 +476,11 @@
         "title": "分页大小",
         "desc": "设置文章列表每页显示的数量",
         "label": "每页文章数"
+      },
+      "external_links": {
+        "title": "外部链接",
+        "desc": "设置在首页英雄区展示的外部链接，JSON 数组格式。格式: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "外部链接 (JSON)"
       }
     },
     "header_layout": {
@@ -521,6 +550,15 @@
     "wordpress": {
       "desc": "上传 WordPress 导出的 XML 文件",
       "title": "从 WordPress 导入"
+    },
+    "about": {
+      "title": "关于",
+      "content": {
+        "title": "关于内容",
+        "desc": "设置在首页和 /about 页面展示的关于内容。支持 Markdown。",
+        "label": "关于内容 (Markdown)",
+        "placeholder": "用 Markdown 编写关于页面内容..."
+      }
     }
   },
   "sitename": "站点名称",

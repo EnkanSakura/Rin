@@ -1,6 +1,6 @@
 {
   "about": {
-    "notfound": "Set the article alias to `about` to create an about page",
+    "notfound": "Set about content in the settings to create an about page",
     "title": "About"
   },
   "admin": {
@@ -192,7 +192,31 @@
   },
   "github_login": "Github Login",
   "hashtags": "Hashtags",
-  "home": "Home",
+  "home": {
+    "navigation": "Explore",
+    "nav": {
+      "articles": {
+        "title": "Articles",
+        "desc": "View all published articles"
+      },
+      "timeline": {
+        "title": "Timeline",
+        "desc": "Browse articles by date"
+      },
+      "moments": {
+        "title": "Moments",
+        "desc": "Quick thoughts and updates"
+      },
+      "friends": {
+        "title": "Friends",
+        "desc": "Friendly blog links"
+      },
+      "hashtags": {
+        "title": "Tags",
+        "desc": "Browse articles by topic"
+      }
+    }
+  },
   "index": {
     "back": "Back to Home",
     "empty": {
@@ -452,6 +476,11 @@
         "title": "Page Size",
         "desc": "Set the number of articles displayed per page in the list",
         "label": "Articles per page"
+      },
+      "external_links": {
+        "title": "External Links",
+        "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "External Links (JSON)"
       }
     },
     "header_layout": {
@@ -521,6 +550,15 @@
     "wordpress": {
       "desc": "Upload the XML file exported from WordPress",
       "title": "Import from WordPress"
+    },
+    "about": {
+      "title": "About",
+      "content": {
+        "title": "About Content",
+        "desc": "Set the about page content displayed on the homepage and /about page. Supports Markdown.",
+        "label": "About Content (Markdown)",
+        "placeholder": "Write your about page content in Markdown..."
+      }
     }
   },
   "sitename": "Site Name",

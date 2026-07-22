@@ -1,6 +1,6 @@
 {
   "about": {
-    "notfound": "將文章別名設定為 about 可以創建關於頁面",
+    "notfound": "Set about content in the settings to create an about page",
     "title": "關於"
   },
   "admin": {
@@ -192,7 +192,31 @@
   },
   "github_login": "Github 登入",
   "hashtags": "標籤",
-  "home": "首頁",
+  "home": {
+    "navigation": "Explore",
+    "nav": {
+      "articles": {
+        "title": "Articles",
+        "desc": "View all published articles"
+      },
+      "timeline": {
+        "title": "Timeline",
+        "desc": "Browse articles by date"
+      },
+      "moments": {
+        "title": "Moments",
+        "desc": "Quick thoughts and updates"
+      },
+      "friends": {
+        "title": "Friends",
+        "desc": "Friendly blog links"
+      },
+      "hashtags": {
+        "title": "Tags",
+        "desc": "Browse articles by topic"
+      }
+    }
+  },
   "index": {
     "back": "返回首頁",
     "empty": {
@@ -452,6 +476,11 @@
         "title": "分頁大小",
         "desc": "設定文章列表每頁顯示的數量",
         "label": "每頁文章數量"
+      },
+      "external_links": {
+        "title": "External Links",
+        "desc": "Set external links displayed on the homepage hero section as a JSON array. Format: [{\"name\": \"GitHub\", \"url\": \"https://...\", \"icon\": \"ri-github-line\"}]",
+        "label": "External Links (JSON)"
       }
     },
     "header_layout": {
@@ -521,6 +550,15 @@
     "wordpress": {
       "desc": "上傳 WordPress 匯出的 XML 文件",
       "title": "從 WordPress 匯入"
+    },
+    "about": {
+      "title": "關於",
+      "content": {
+        "title": "關於內容",
+        "desc": "設置在首頁和 /about 頁面展示的關於內容。支援 Markdown。",
+        "label": "關於內容 (Markdown)",
+        "placeholder": "用 Markdown 編寫關於頁面內容..."
+      }
     }
   },
   "sitename": "網站名稱",

@@ -3,6 +3,13 @@ import { ClientConfigContext } from "../state/config";
 import { normalizeFeedCardVariant } from "../components/feed-card-options";
 import { normalizeFeedLayout } from "../components/feed-layout-options";
 
+// External link type
+export interface ExternalLink {
+  name: string;
+  url: string;
+  icon: string;
+}
+
 // Site configuration keys
 export const SITE_CONFIG_KEYS = {
     headerBehavior: "header.behavior",
@@ -14,6 +21,8 @@ export const SITE_CONFIG_KEYS = {
     feedCardVariant: "feed.card_variant",
     headerLayout: "header.layout",
     themeColor: "theme.color",
+    externalLinks: "site.external_links",
+    aboutContent: "site.about_content",
 } as const;
 
 // Hook to get site configuration
@@ -27,6 +36,14 @@ export function useSiteConfig() {
                 ? parseInt(pageSizeValue, 10)
                 : NaN;
 
+    const rawLinks = config.get<string>(SITE_CONFIG_KEYS.externalLinks) || "[]";
+    let externalLinks: ExternalLink[] = [];
+    try {
+        externalLinks = JSON.parse(rawLinks);
+    } catch {
+        externalLinks = [];
+    }
+
     return {
         name: config.get<string>(SITE_CONFIG_KEYS.name) || "Rin",
         description: config.get<string>(SITE_CONFIG_KEYS.description) || "",
@@ -37,6 +54,8 @@ export function useSiteConfig() {
         feedCardVariant: normalizeFeedCardVariant(config.get<string>(SITE_CONFIG_KEYS.feedCardVariant) || "default"),
         headerLayout: config.get<string>(SITE_CONFIG_KEYS.headerLayout) || "classic",
         themeColor: config.get<string>(SITE_CONFIG_KEYS.themeColor) || "#fc466b",
+        externalLinks,
+        aboutContent: config.get<string>(SITE_CONFIG_KEYS.aboutContent) || "",
     };
 }
 

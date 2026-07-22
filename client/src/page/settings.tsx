@@ -206,6 +206,16 @@ export function Settings() {
               setConfigValue("client", "site.description", value);
             }}
           />
+          <ItemInput
+            title={t("settings.site.external_links.title")}
+            description={t("settings.site.external_links.desc")}
+            configKeyTitle={t("settings.site.external_links.label")}
+            value={String(clientConfig.get("site.external_links") ?? "")}
+            placeholder={String(clientConfig.default("site.external_links") ?? "[]")}
+            onChange={(value) => {
+              setConfigValue("client", "site.external_links", value);
+            }}
+          />
           <ItemImageInput
             title={t("settings.site.avatar.title")}
             description={t("settings.site.avatar.desc")}
@@ -225,6 +235,17 @@ export function Settings() {
             placeholder={String(clientConfig.default("site.page_size") ?? t("settings.site.page_size.label"))}
             onChange={(value) => {
               setConfigValue("client", "site.page_size", value);
+            }}
+          />
+          <ItemTitle title={t("settings.about.title")} />
+          <ItemInput
+            title={t("settings.about.content.title")}
+            description={t("settings.about.content.desc")}
+            configKeyTitle={t("settings.about.content.label")}
+            value={String(clientConfig.get("site.about_content") ?? "")}
+            placeholder={t("settings.about.content.placeholder")}
+            onChange={(value) => {
+              setConfigValue("client", "site.about_content", value);
             }}
           />
 
