@@ -402,3 +402,131 @@ export function ItemImageInput({
     </div>
   );
 }
+
+export interface ChecklistOption {
+  id: string;
+  label: string;
+}
+
+export function ItemDraggableChecklist({
+  title,
+  description,
+  allOptions,
+  value,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  allOptions: ChecklistOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  const enabledIds: string[] = (() => {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const orderedOptions = (() => {
+    const enabled = new Set(enabledIds);
+    const enabledList = enabledIds
+      .map((id) => allOptions.find((o) => o.id === id))
+      .filter((o): o is ChecklistOption => o !== undefined);
+    const disabledList = allOptions.filter((o) => !enabled.has(o.id));
+    return [...enabledList, ...disabledList];
+  })();
+
+  function updateConfig(newOrdered: ChecklistOption[], enabled: Set<string>) {
+    const result = newOrdered.filter((item) => enabled.has(item.id)).map((item) => item.id);
+    onChange(JSON.stringify(result));
+  }
+
+  function handleDragStart(index: number) {
+    setDragIndex(index);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const items = [...orderedOptions];
+    const [moved] = items.splice(dragIndex, 1);
+    items.splice(index, 0, moved);
+    setDragIndex(index);
+    updateConfig(items, new Set(enabledIds));
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+  }
+
+  function handleToggle(id: string, checked: boolean) {
+    const enabled = new Set(enabledIds);
+    if (checked) enabled.add(id);
+    else enabled.delete(id);
+    updateConfig(orderedOptions, enabled);
+  }
+
+  return (
+    <div className="w-full">
+      <SettingsCard>
+        <button type="button" className="block w-full text-left" onClick={() => setIsOpen((c) => !c)}>
+          <SettingsCardRow
+            header={<SettingsCardHeader title={title} description={description} />}
+            action={
+              <div className="flex items-center gap-3">
+                <span className="max-w-56 truncate text-sm text-neutral-500 dark:text-neutral-400">
+                  {enabledIds.length > 0
+                    ? t("settings.selected_count", { count: enabledIds.length })
+                    : t("settings.not_configured")}
+                </span>
+                <i className={`ri-arrow-down-s-line text-lg text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+              </div>
+            }
+          />
+        </button>
+        {isOpen && (
+          <SettingsCardBody>
+            <div className="space-y-1">
+              {orderedOptions.map((option, index) => {
+                const isEnabled = enabledIds.includes(option.id);
+                const isDragging = dragIndex === index;
+                return (
+                  <div
+                    key={option.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                      isDragging
+                        ? "opacity-50 ring-2 ring-theme/30"
+                        : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                    } ${isEnabled ? "" : "opacity-60"}`}
+                  >
+                    <i className="ri-draggable cursor-grab text-neutral-400 active:cursor-grabbing" />
+                    <label className="flex cursor-pointer items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={(e) => handleToggle(option.id, e.target.checked)}
+                        className="h-4 w-4 accent-theme"
+                      />
+                      <span className="t-primary truncate">{option.label}</span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </SettingsCardBody>
+        )}
+      </SettingsCard>
+    </div>
+  );
+}

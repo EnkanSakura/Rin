@@ -214,6 +214,18 @@
       "hashtags": {
         "title": "标签",
         "desc": "按主题浏览文章"
+      },
+      "bangumi": {
+        "title": "番组计划",
+        "desc": "Bangumi 收藏列表"
+      },
+      "tools": {
+        "title": "工具箱",
+        "desc": "实用在线工具"
+      },
+      "about": {
+        "title": "关于",
+        "desc": "了解站点更多信息"
       }
     }
   },
@@ -304,6 +316,7 @@
   "save": "保存",
   "saving": "保存中",
   "settings": {
+    "selected_count": "已选 {{count}} 项",
     "cache": {
       "enabled": {
         "title": "启用缓存",
@@ -525,6 +538,10 @@
         "editorial": "更有展示感的卡片，带轻微主题染色、更强层级和类似画册的 framing。"
       }
     },
+    "nav_links": {
+      "title": "导航链接",
+      "desc": "选择站点顶部导航栏中显示的页面链接，拖拽可调整顺序"
+    },
     "feed_layout": {
       "title": "文章列表布局",
       "desc": "选择文章列表、搜索结果和标签页里卡片的排列方式",
@@ -567,6 +584,37 @@
         "desc": "设置在首页和 /about 页面展示的关于内容。支持 Markdown。",
         "label": "关于内容 (Markdown)",
         "placeholder": "用 Markdown 编写关于页面内容..."
+      }
+    },
+    "bangumi": {
+      "title": "番组计划",
+      "enable": {
+        "title": "启用番组计划",
+        "desc": "在导航栏显示番组计划页面"
+      },
+      "user_id": {
+        "title": "Bangumi 用户 ID",
+        "desc": "输入你的 Bangumi 用户 ID（数字）",
+        "label": "User ID"
+      },
+      "user_agent": {
+        "title": "User-Agent",
+        "desc": "请求 Bangumi API 时使用的 User-Agent",
+        "label": "User-Agent"
+      },
+      "api_url": {
+        "title": "API 地址",
+        "desc": "Bangumi API 的基础地址",
+        "label": "API URL"
+      },
+      "subject_base_url": {
+        "title": "条目详情页地址",
+        "desc": "Bangumi 条目详情页的 URL 前缀",
+        "label": "Subject Base URL"
+      },
+      "categories": {
+        "title": "条目分类",
+        "desc": "选择番组计划页面中展示的条目分类，拖拽可调整顺序"
       }
     }
   },
@@ -801,5 +849,41 @@
   "sort_latest": "最新",
   "sort_popular": "热门",
   "total_tags": "共 {{count}} 个标签",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+  "bangumi": {
+    "title": "番组计划",
+    "description": "展示在 Bangumi 上的收藏记录",
+    "all": "全部",
+    "all_status": "全部状态",
+    "empty": "暂无收藏",
+    "not_configured": "番组计划尚未配置，请在后台设置中配置 Bangumi 用户 ID",
+    "bgm_score": "Bangumi 评分",
+    "my_score": "我的评分",
+    "unrated": "未评分",
+    "total_count": "共 {{count}} 个条目",
+    "category": {
+      "anime": "动画",
+      "book": "书籍",
+      "music": "音乐",
+      "game": "游戏",
+      "reality": "三次元"
+    },
+    "status": {
+      "wish": "想看",
+      "done": "看过",
+      "doing": "在看",
+      "on_hold": "搁置",
+      "dropped": "抛弃"
+    }
+  },
+  "tools": {
+    "title": "工具箱",
+    "description": "实用在线工具合集",
+    "color_picker": { "title": "取色器", "desc": "网页取色与颜色格式转换" },
+    "base64": { "title": "Base64 编解码", "desc": "Base64 编码与解码" },
+    "json_formatter": { "title": "JSON 格式化", "desc": "JSON 数据格式化与校验" },
+    "qr_code": { "title": "二维码生成", "desc": "将文本或链接生成二维码" },
+    "markdown": { "title": "Markdown 预览", "desc": "实时 Markdown 编辑与预览" },
+    "password": { "title": "密码生成器", "desc": "生成安全随机密码" }
+  }
 }

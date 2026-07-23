@@ -17,10 +17,15 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "site.name": "Rin",
     "site.description": "A lightweight personal blogging system",
     "site.avatar": "",
-    "nav.links": "[\"feeds\",\"timeline\",\"moments\",\"hashtags\",\"friends\",\"about\"]",
+    "nav.links": "[\"feeds\",\"timeline\",\"moments\",\"hashtags\",\"tools\",\"friends\",\"bangumi\",\"about\"]",
     "site.page_size": 5,
     "site.external_links": "[]",
     "site.about_content": "",
+    "bangumi.userId": "",
+    "bangumi.userAgent": "Rin-Bangumi/1.0",
+    "bangumi.apiUrl": "https://api.bgm.tv",
+    "bangumi.subjectBaseUrl": "https://bgm.tv/subject/",
+    "bangumi.categoryOrder": "[\"anime\",\"book\",\"music\",\"game\"]",
   }),
 );
 

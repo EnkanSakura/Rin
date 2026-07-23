@@ -214,6 +214,18 @@
       "hashtags": {
         "title": "Tags",
         "desc": "Browse articles by topic"
+      },
+      "bangumi": {
+        "title": "Bangumi",
+        "desc": "Bangumi collection list"
+      },
+      "tools": {
+        "title": "Tools",
+        "desc": "Online utilities"
+      },
+      "about": {
+        "title": "About",
+        "desc": "Learn more about the site"
       }
     }
   },
@@ -304,6 +316,7 @@
   "save": "Save",
   "saving": "Saving",
   "settings": {
+    "selected_count": "{{count}} selected",
     "cache": {
       "enabled": {
         "title": "Enable cache",
@@ -513,6 +526,10 @@
         "reveal": "Show on scroll up"
       }
     },
+    "nav_links": {
+      "title": "Navigation Links",
+      "desc": "Choose which pages appear in the top navigation bar. Drag to reorder."
+    },
     "feed_card": {
       "title": "Feed card style",
       "desc": "Choose the visual treatment used by article cards across feed, search, and tag lists",
@@ -567,6 +584,37 @@
         "desc": "Set the about page content displayed on the homepage and /about page. Supports Markdown.",
         "label": "About Content (Markdown)",
         "placeholder": "Write your about page content in Markdown..."
+      }
+    },
+    "bangumi": {
+      "title": "Bangumi",
+      "enable": {
+        "title": "Enable Bangumi",
+        "desc": "Show Bangumi page in the navigation bar"
+      },
+      "user_id": {
+        "title": "Bangumi User ID",
+        "desc": "Enter your Bangumi user ID (numeric)",
+        "label": "User ID"
+      },
+      "user_agent": {
+        "title": "User-Agent",
+        "desc": "User-Agent header sent to Bangumi API",
+        "label": "User-Agent"
+      },
+      "api_url": {
+        "title": "API URL",
+        "desc": "Bangumi API base URL",
+        "label": "API URL"
+      },
+      "subject_base_url": {
+        "title": "Subject Detail URL",
+        "desc": "Bangumi subject detail page URL prefix",
+        "label": "Subject Base URL"
+      },
+      "categories": {
+        "title": "Categories",
+        "desc": "Choose which Bangumi categories to display. Drag to reorder."
       }
     }
   },
@@ -801,5 +849,41 @@
   "sort_latest": "Latest",
   "sort_popular": "Popular",
   "total_tags": "Total {{count}} tags",
-  "anonymous": "Anonymous"
+  "anonymous": "Anonymous",
+  "bangumi": {
+    "title": "Bangumi",
+    "description": "My Bangumi collection",
+    "all": "All",
+    "all_status": "All Status",
+    "empty": "No collections yet",
+    "not_configured": "Bangumi is not configured. Please configure the Bangumi user ID in the admin settings.",
+    "bgm_score": "BGM Score",
+    "my_score": "My Score",
+    "unrated": "Unrated",
+    "total_count": "{{count}} items total",
+    "category": {
+      "anime": "Anime",
+      "book": "Book",
+      "music": "Music",
+      "game": "Game",
+      "reality": "Reality"
+    },
+    "status": {
+      "wish": "Wish",
+      "done": "Done",
+      "doing": "Doing",
+      "on_hold": "On Hold",
+      "dropped": "Dropped"
+    }
+  },
+  "tools": {
+    "title": "Tools",
+    "description": "Collection of online utilities",
+    "color_picker": { "title": "Color Picker", "desc": "Web color picking and format conversion" },
+    "base64": { "title": "Base64 Encode/Decode", "desc": "Base64 encoding and decoding" },
+    "json_formatter": { "title": "JSON Formatter", "desc": "JSON formatting and validation" },
+    "qr_code": { "title": "QR Code Generator", "desc": "Generate QR codes from text or links" },
+    "markdown": { "title": "Markdown Preview", "desc": "Real-time Markdown editing and preview" },
+    "password": { "title": "Password Generator", "desc": "Generate secure random passwords" }
+  }
 }

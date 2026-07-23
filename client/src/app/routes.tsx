@@ -14,6 +14,7 @@ import { AboutPage } from "../page/about";
 import { CallbackPage } from "../page/callback";
 import { CompatTasksPage } from "../page/compat-tasks";
 import { ErrorPage } from "../page/error";
+import { BangumiPage } from "../page/bangumi";
 import { FeedPage, TOCHeader } from "../page/feed";
 import { FeedsPage } from "../page/feeds";
 import { FriendsPage } from "../page/friends";
@@ -28,6 +29,7 @@ import { QueueStatusPage } from "../page/queue-status";
 import { SearchPage } from "../page/search";
 import { Settings } from "../page/settings";
 import { TimelinePage } from "../page/timeline";
+import { ToolsPage } from "../page/tools";
 import { WritingPage } from "../page/writing";
 import { ProfileContext } from "../state/profile";
 import { tryInt } from "../utils/int";
@@ -60,6 +62,14 @@ export function AppRoutes() {
 
       <AppRoute path="/friends">
         <FriendsPage />
+      </AppRoute>
+
+      <AppRoute path="/bangumi">
+        <BangumiPage />
+      </AppRoute>
+
+      <AppRoute path="/tools">
+        <ToolsPage />
       </AppRoute>
 
       <AppRoute path="/hashtags">

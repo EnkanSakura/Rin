@@ -214,6 +214,18 @@
       "hashtags": {
         "title": "Tags",
         "desc": "Browse articles by topic"
+      },
+      "bangumi": {
+        "title": "番組計画",
+        "desc": "Bangumi コレクション"
+      },
+      "tools": {
+        "title": "ツール",
+        "desc": "オンラインユーティリティ"
+      },
+      "about": {
+        "title": "概要",
+        "desc": "サイトの詳細情報"
       }
     }
   },
@@ -295,6 +307,7 @@
   "save": "保存",
   "saving": "保存中",
   "settings": {
+    "selected_count": "{{count}} 件選択中",
     "cache": {
       "enabled": {
         "title": "キャッシュを有効化",
@@ -504,6 +517,10 @@
         "reveal": "上スクロールで表示"
       }
     },
+    "nav_links": {
+      "title": "ナビゲーションリンク",
+      "desc": "ヘッダーナビゲーションに表示するページを選択。ドラッグで並び替え"
+    },
     "feed_card": {
       "title": "記事カードのスタイル",
       "desc": "記事一覧、検索結果、タグ一覧で使うカード表現を選びます",
@@ -558,6 +575,37 @@
         "desc": "ホームページおよび/aboutページに表示される「概要」ページのコンテンツを設定します。Markdownをサポートしています。",
         "label": "概要 コンテンツ(Markdown)",
         "placeholder": "Markdownで「概要」ページのコンテンツを記述してください。.."
+      }
+    },
+    "bangumi": {
+      "title": "番組計画",
+      "enable": {
+        "title": "番組計画を有効にする",
+        "desc": "ナビゲーションバーに番組計画ページを表示"
+      },
+      "user_id": {
+        "title": "Bangumi ユーザー ID",
+        "desc": "Bangumi ユーザーID（数字）を入力",
+        "label": "User ID"
+      },
+      "user_agent": {
+        "title": "User-Agent",
+        "desc": "Bangumi API に送信する User-Agent",
+        "label": "User-Agent"
+      },
+      "api_url": {
+        "title": "API URL",
+        "desc": "Bangumi API のベースURL",
+        "label": "API URL"
+      },
+      "subject_base_url": {
+        "title": "Subject 詳細URL",
+        "desc": "Bangumi アイテム詳細ページのURLプレフィックス",
+        "label": "Subject Base URL"
+      },
+      "categories": {
+        "title": "カテゴリ",
+        "desc": "番組計画ページに表示するカテゴリを選択。ドラッグで並び替え"
       }
     }
   },
@@ -792,5 +840,41 @@
   "sort_latest": "新着",
   "sort_popular": "人気",
   "total_tags": "全 {{count}} 個のタグ",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+  "bangumi": {
+    "title": "番組計画",
+    "description": "Bangumi 上のコレクション",
+    "all": "すべて",
+    "all_status": "すべての状態",
+    "empty": "コレクションはまだありません",
+    "not_configured": "番組計画が設定されていません。管理画面で Bangumi ユーザーID を設定してください。",
+    "bgm_score": "Bangumi スコア",
+    "my_score": "マイスコア",
+    "unrated": "未評価",
+    "total_count": "全 {{count}} 件",
+    "category": {
+      "anime": "アニメ",
+      "book": "書籍",
+      "music": "音楽",
+      "game": "ゲーム",
+      "reality": "三次元"
+    },
+    "status": {
+      "wish": "見たい",
+      "done": "見た",
+      "doing": "見てる",
+      "on_hold": "保留",
+      "dropped": "中止"
+    }
+  },
+  "tools": {
+    "title": "ツール",
+    "description": "便利なオンラインツール集",
+    "color_picker": { "title": "カラーピッカー", "desc": "Webカラー選択と形式変換" },
+    "base64": { "title": "Base64 変換", "desc": "Base64 エンコード/デコード" },
+    "json_formatter": { "title": "JSON フォーマッター", "desc": "JSON データのフォーマットと検証" },
+    "qr_code": { "title": "QRコード生成", "desc": "テキストやリンクからQRコードを生成" },
+    "markdown": { "title": "Markdown プレビュー", "desc": "リアルタイム Markdown 編集とプレビュー" },
+    "password": { "title": "パスワード生成", "desc": "安全なランダムパスワードを生成" }
+  }
 }

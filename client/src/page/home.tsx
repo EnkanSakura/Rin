@@ -1,41 +1,36 @@
+import { useContext } from "react";
 import { Helmet } from "react-helmet";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { Markdown } from "../components/markdown";
+import { ClientConfigContext } from "../state/config";
 
-// Navigation card data
-const NAV_ITEMS = [
-  {
-    href: "/feeds",
-    icon: "ri-article-line",
-    key: "articles",
-  },
-  {
-    href: "/timeline",
-    icon: "ri-timeline-view",
-    key: "timeline",
-  },
-  {
-    href: "/moments",
-    icon: "ri-magic-line",
-    key: "moments",
-  },
-  {
-    href: "/friends",
-    icon: "ri-user-heart-line",
-    key: "friends",
-  },
-  {
-    href: "/hashtags",
-    icon: "ri-hashtag",
-    key: "hashtags",
-  },
-] as const;
+const NAV_CARD_MAP: Record<string, { href: string; icon: string; navKey: string }> = {
+  feeds: { href: "/feeds", icon: "ri-article-line", navKey: "articles" },
+  timeline: { href: "/timeline", icon: "ri-timeline-view", navKey: "timeline" },
+  moments: { href: "/moments", icon: "ri-magic-line", navKey: "moments" },
+  hashtags: { href: "/hashtags", icon: "ri-hashtag", navKey: "hashtags" },
+  friends: { href: "/friends", icon: "ri-user-heart-line", navKey: "friends" },
+  bangumi: { href: "/bangumi", icon: "ri-film-line", navKey: "bangumi" },
+  tools: { href: "/tools", icon: "ri-tools-line", navKey: "tools" },
+  about: { href: "/about", icon: "ri-information-line", navKey: "about" },
+};
 
 export function HomePage() {
   const { t } = useTranslation();
   const siteConfig = useSiteConfig();
+  const clientConfig = useContext(ClientConfigContext);
+
+  const navLinksRaw = String(clientConfig.get("nav.links") ?? "[]");
+  let enabledIds: string[];
+  try {
+    enabledIds = JSON.parse(navLinksRaw);
+    if (!Array.isArray(enabledIds)) enabledIds = [];
+  } catch {
+    enabledIds = [];
+  }
+  const navCards = enabledIds.map((id) => NAV_CARD_MAP[id]).filter(Boolean);
 
   return (
     <div className="flex flex-col items-center">
@@ -91,9 +86,9 @@ export function HomePage() {
           {t("home.navigation")}
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          {NAV_ITEMS.map((item) => (
+          {navCards.map((item) => (
             <Link
-              key={item.key}
+              key={item.navKey}
               href={item.href}
               className="group flex flex-col items-center gap-3 rounded-2xl border border-black/10 bg-w p-6 text-center transition-all hover:border-theme/30 hover:shadow-md hover:shadow-theme/5 dark:border-white/10 dark:hover:border-theme/30"
             >
@@ -102,10 +97,10 @@ export function HomePage() {
               </div>
               <div>
                 <h3 className="text-sm font-medium t-primary">
-                  {t(`home.nav.${item.key}.title`)}
+                  {t(`home.nav.${item.navKey}.title`)}
                 </h3>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  {t(`home.nav.${item.key}.desc`)}
+                  {t(`home.nav.${item.navKey}.desc`)}
                 </p>
               </div>
             </Link>

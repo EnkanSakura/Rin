@@ -20,6 +20,8 @@ import { FEED_LAYOUT_OPTIONS, normalizeFeedLayout } from "../components/feed-lay
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { applyThemeColor, normalizeThemeColor } from "../utils/theme-color";
 import { AISummarySettings } from "./settings-ai";
+import { BangumiSettings } from "./settings-bangumi";
+import { NavLinksSettings } from "./settings-nav-links";
 import { ItemButton, ItemExternalLinks, ItemImageInput, ItemInput, ItemSwitch, ItemWithUpload } from "./settings-items";
 import {
   areSettingsDraftsEqual,
@@ -190,6 +192,7 @@ export function Settings() {
           { key: "personalization", label: t("settings.personalization.title") },
           { key: "other", label: t("settings.other.title") },
           { key: "webhook", label: t("settings.webhook.title") },
+          { key: "bangumi", label: t("settings.bangumi.title") },
           { key: "friend", label: t("settings.friend.title") },
           { key: "maintenance", label: t("settings.maintenance.title") },
         ].map((tab, i) => (
@@ -471,6 +474,14 @@ export function Settings() {
               </div>
             </SettingsCard>
           </div>
+          <div className="w-full">
+            <NavLinksSettings
+              value={String(clientConfig.get("nav.links") ?? "[]")}
+              onChange={(value) => {
+                setConfigValue("client", "nav.links", value);
+              }}
+            />
+          </div>
     </>
           )}
 
@@ -626,7 +637,7 @@ export function Settings() {
           </>
           )}
 
-          {activeTab === 4 && (
+          {activeTab === 5 && (
           <>
           <ItemSwitch
             title={t("settings.friend.apply.title")}
@@ -657,7 +668,21 @@ export function Settings() {
           </>
           )}
 
-          {activeTab === 5 && (
+          {activeTab === 4 && (
+          <>
+          <BangumiSettings
+            userId={String(clientConfig.get("bangumi.userId") ?? "")}
+            userAgent={String(clientConfig.get("bangumi.userAgent") ?? "Rin-Bangumi/1.0")}
+            apiUrl={String(clientConfig.get("bangumi.apiUrl") ?? "https://api.bgm.tv")}
+            subjectBaseUrl={String(clientConfig.get("bangumi.subjectBaseUrl") ?? "https://bgm.tv/subject/")}
+            enabled={Boolean(clientConfig.getBoolean("bangumi.enabled"))}
+            categoryOrder={String(clientConfig.get("bangumi.categoryOrder") ?? "[]")}
+            onChange={(key, value) => setConfigValue("client", key, value)}
+          />
+          </>
+          )}
+
+          {activeTab === 6 && (
           <>
           <ItemSwitch
             title={t("settings.cache.enabled.title")}

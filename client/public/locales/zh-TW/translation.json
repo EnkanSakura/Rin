@@ -214,6 +214,18 @@
       "hashtags": {
         "title": "Tags",
         "desc": "Browse articles by topic"
+      },
+      "bangumi": {
+        "title": "番組計劃",
+        "desc": "Bangumi 收藏列表"
+      },
+      "tools": {
+        "title": "工具箱",
+        "desc": "實用線上工具"
+      },
+      "about": {
+        "title": "關於",
+        "desc": "了解站點更多資訊"
       }
     }
   },
@@ -304,6 +316,7 @@
   "save": "保存",
   "saving": "保存中",
   "settings": {
+    "selected_count": "已選 {{count}} 項",
     "cache": {
       "enabled": {
         "title": "啟用緩存",
@@ -513,6 +526,10 @@
         "reveal": "上滑時顯示"
       }
     },
+    "nav_links": {
+      "title": "導航連結",
+      "desc": "選擇站點頂部導航欄中顯示的頁面連結，拖曳可調整順序"
+    },
     "feed_card": {
       "title": "文章卡片樣式",
       "desc": "選擇文章列表、搜尋結果與標籤頁中卡片的視覺風格",
@@ -567,6 +584,37 @@
         "desc": "設置在首頁和 /about 頁面展示的關於內容。支援 Markdown。",
         "label": "關於內容 (Markdown)",
         "placeholder": "用 Markdown 編寫關於頁面內容..."
+      }
+    },
+    "bangumi": {
+      "title": "番組計劃",
+      "enable": {
+        "title": "啟用番組計劃",
+        "desc": "在導航欄顯示番組計劃頁面"
+      },
+      "user_id": {
+        "title": "Bangumi 用戶 ID",
+        "desc": "輸入你的 Bangumi 用戶 ID（數字）",
+        "label": "User ID"
+      },
+      "user_agent": {
+        "title": "User-Agent",
+        "desc": "請求 Bangumi API 時使用的 User-Agent",
+        "label": "User-Agent"
+      },
+      "api_url": {
+        "title": "API 地址",
+        "desc": "Bangumi API 的基礎地址",
+        "label": "API URL"
+      },
+      "subject_base_url": {
+        "title": "條目詳情頁地址",
+        "desc": "Bangumi 條目詳情頁的 URL 前綴",
+        "label": "Subject Base URL"
+      },
+      "categories": {
+        "title": "條目分類",
+        "desc": "選擇番組計劃頁面中展示的條目分類，拖曳可調整順序"
       }
     }
   },
@@ -801,5 +849,41 @@
   "sort_latest": "最新",
   "sort_popular": "熱門",
   "total_tags": "共 {{count}} 個標籤",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+  "bangumi": {
+    "title": "番組計劃",
+    "description": "展示在 Bangumi 上的收藏記錄",
+    "all": "全部",
+    "all_status": "全部狀態",
+    "empty": "暫無收藏",
+    "not_configured": "番組計劃尚未配置，請在後台設定中配置 Bangumi 用戶 ID",
+    "bgm_score": "Bangumi 評分",
+    "my_score": "我的評分",
+    "unrated": "未評分",
+    "total_count": "共 {{count}} 個條目",
+    "category": {
+      "anime": "動畫",
+      "book": "書籍",
+      "music": "音樂",
+      "game": "遊戲",
+      "reality": "三次元"
+    },
+    "status": {
+      "wish": "想看",
+      "done": "看過",
+      "doing": "在看",
+      "on_hold": "擱置",
+      "dropped": "拋棄"
+    }
+  },
+  "tools": {
+    "title": "工具箱",
+    "description": "實用線上工具合集",
+    "color_picker": { "title": "取色器", "desc": "網頁取色與顏色格式轉換" },
+    "base64": { "title": "Base64 編解碼", "desc": "Base64 編碼與解碼" },
+    "json_formatter": { "title": "JSON 格式化", "desc": "JSON 資料格式化與驗證" },
+    "qr_code": { "title": "二維碼生成", "desc": "將文字或連結生成二維碼" },
+    "markdown": { "title": "Markdown 預覽", "desc": "即時 Markdown 編輯與預覽" },
+    "password": { "title": "密碼產生器", "desc": "產生安全隨機密碼" }
+  }
 }
