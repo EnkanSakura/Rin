@@ -188,7 +188,7 @@
       "rejected": "拒绝",
       "waiting": "待审核"
     },
-    "title": "朋友们"
+    "title": "友链"
   },
   "github_login": "Github 登录",
   "hashtags": "标签",
@@ -216,11 +216,11 @@
         "desc": "按主题浏览文章"
       },
       "bangumi": {
-        "title": "番组计划",
+        "title": "Bangumi",
         "desc": "Bangumi 收藏列表"
       },
       "tools": {
-        "title": "工具箱",
+        "title": "工具",
         "desc": "实用在线工具"
       },
       "about": {
@@ -399,7 +399,7 @@
         "title": "友链申请"
       },
       "health": {
-        "desc": "启用朋友们链接可访问性检查",
+        "desc": "启用友链链接可访问性检查",
         "title": "友链健康监测",
         "ua": {
           "desc": "设置友链可访问性检查时使用的 User-Agent, 默认 'Rin-Check/1.0'",
@@ -587,10 +587,10 @@
       }
     },
     "bangumi": {
-      "title": "番组计划",
+      "title": "Bangumi",
       "enable": {
-        "title": "启用番组计划",
-        "desc": "在导航栏显示番组计划页面"
+        "title": "启用 Bangumi",
+        "desc": "在导航栏显示 Bangumi 页面"
       },
       "user_id": {
         "title": "Bangumi 用户 ID",
@@ -614,7 +614,7 @@
       },
       "categories": {
         "title": "条目分类",
-        "desc": "选择番组计划页面中展示的条目分类，拖拽可调整顺序"
+        "desc": "选择 Bangumi 页面中展示的条目分类，拖拽可调整顺序"
       }
     }
   },
@@ -851,12 +851,12 @@
   "total_tags": "共 {{count}} 个标签",
   "anonymous": "匿名",
   "bangumi": {
-    "title": "番组计划",
+    "title": "Bangumi",
     "description": "展示在 Bangumi 上的收藏记录",
     "all": "全部",
     "all_status": "全部状态",
     "empty": "暂无收藏",
-    "not_configured": "番组计划尚未配置，请在后台设置中配置 Bangumi 用户 ID",
+    "not_configured": "Bangumi 尚未配置，请在后台设置中配置 Bangumi 用户 ID",
     "bgm_score": "Bangumi 评分",
     "my_score": "我的评分",
     "unrated": "未评分",
@@ -877,7 +877,7 @@
     }
   },
   "tools": {
-    "title": "工具箱",
+    "title": "工具",
     "description": "实用在线工具合集",
     "color_picker": { "title": "取色器", "desc": "网页取色与颜色格式转换" },
     "base64": { "title": "Base64 编解码", "desc": "Base64 编码与解码" },
