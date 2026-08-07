@@ -38,6 +38,7 @@ dist-ssr
 
 # Agent Tool
 .deepseek/
+TARGETS.md
 
 # Bun
 .bun/*

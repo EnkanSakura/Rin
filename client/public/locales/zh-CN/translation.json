@@ -216,7 +216,7 @@
         "desc": "按主题浏览文章"
       },
       "bangumi": {
-        "title": "Bangumi",
+        "title": "追番",
         "desc": "Bangumi 收藏列表"
       },
       "tools": {
@@ -587,10 +587,10 @@
       }
     },
     "bangumi": {
-      "title": "Bangumi",
+      "title": "追番",
       "enable": {
-        "title": "启用 Bangumi",
-        "desc": "在导航栏显示 Bangumi 页面"
+        "title": "启用追番",
+        "desc": "在导航栏显示追番页面"
       },
       "user_id": {
         "title": "Bangumi 用户 ID",
@@ -609,12 +609,12 @@
       },
       "subject_base_url": {
         "title": "条目详情页地址",
-        "desc": "Bangumi 条目详情页的 URL 前缀",
+        "desc": "追番条目详情页的 URL 前缀",
         "label": "Subject Base URL"
       },
       "categories": {
         "title": "条目分类",
-        "desc": "选择 Bangumi 页面中展示的条目分类，拖拽可调整顺序"
+        "desc": "选择追番页面中展示的条目分类，拖拽可调整顺序"
       }
     }
   },
@@ -623,7 +623,7 @@
   "status": "状态",
   "summary": "简介",
   "tags": "标签",
-  "timeline": "时间轴",
+  "timeline": "时间线",
   "title": "标题",
   "title_empty": "标题不能为空",
   "top": {
@@ -851,8 +851,8 @@
   "total_tags": "共 {{count}} 个标签",
   "anonymous": "匿名",
   "bangumi": {
-    "title": "Bangumi",
-    "description": "展示在 Bangumi 上的收藏记录",
+    "title": "追番",
+    "description": "展示在追番上的收藏记录",
     "all": "全部",
     "all_status": "全部状态",
     "empty": "暂无收藏",

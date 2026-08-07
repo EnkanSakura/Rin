@@ -9,6 +9,47 @@ function buf2hex(buffer: ArrayBuffer) {
         .join('');
 }
 
+/** Worker-side upload size limit (bytes) — mirrors the client limit with headroom for GIFs */
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+
+const GIF_TYPE = "image/gif";
+
+/**
+ * Convert a GIF to Animated WebP via the configured GIF processor API.
+ * Returns { bytes, contentType } or throws with a descriptive message.
+ */
+async function convertGifToWebP(env: Env, file: File): Promise<{ bytes: ArrayBuffer; contentType: string }> {
+    const processorUrl = env.GIF_PROCESSOR_URL;
+    if (!processorUrl) {
+        throw new Error("GIF processing is not configured (GIF_PROCESSOR_URL missing)");
+    }
+
+    const headers: Record<string, string> = {
+        "Content-Type": file.type || "application/octet-stream",
+    };
+    if (env.GIF_PROCESSOR_SECRET) {
+        headers["Authorization"] = `Bearer ${env.GIF_PROCESSOR_SECRET}`;
+    }
+
+    const response = await fetch(processorUrl, {
+        method: "POST",
+        headers,
+        body: file,
+    });
+
+    if (!response.ok) {
+        throw new Error(`GIF processing failed: ${response.status} ${response.statusText}`);
+    }
+
+    const bytes = await response.arrayBuffer();
+    const contentType = response.headers.get("Content-Type") || "image/webp";
+    if (!bytes.byteLength) {
+        throw new Error("GIF processing failed: empty response");
+    }
+
+    return { bytes, contentType };
+}
+
 export function StorageService(): Hono {
     const app = new Hono();
 
@@ -25,18 +66,43 @@ export function StorageService(): Hono {
             return c.text('Unauthorized', 401);
         }
         
-        const suffix = key.includes(".") ? key.split('.').pop() : "";
-        const fileBuffer = await profileAsync(c, 'storage_file_buffer', () => file.arrayBuffer());
-        const hashArray = await profileAsync(c, 'storage_hash', () => crypto.subtle.digest(
-            { name: 'SHA-1' },
-            fileBuffer
-        ));
-        const hash = buf2hex(hashArray);
-        const hashkey = `${hash}.${suffix}`;
-        
+        if (!file) {
+            c.status(400);
+            return c.text("No file uploaded");
+        }
+
+        if (file.size > MAX_UPLOAD_SIZE) {
+            c.status(413);
+            return c.text(`File too large (max ${Math.round(MAX_UPLOAD_SIZE / 1024 / 1024)}MB)`);
+        }
+
         try {
-            const result = await profileAsync(c, 'storage_put', () => putStorageObject(env, hashkey, file, file.type, new URL(c.req.url).origin));
-            return c.json({ url: result.url });
+            let finalBuffer: ArrayBuffer;
+            let finalType: string;
+            let finalSuffix: string;
+
+            if (file.type === GIF_TYPE) {
+                // GIF must keep animation — convert via processor, never store the raw GIF as WebP
+                const converted = await convertGifToWebP(env, file);
+                finalBuffer = converted.bytes;
+                finalType = converted.contentType;
+                finalSuffix = "webp";
+            } else {
+                finalBuffer = await profileAsync(c, 'storage_file_buffer', () => file.arrayBuffer());
+                finalType = file.type;
+                const rawSuffix = key.includes(".") ? key.split('.').pop() : "";
+                finalSuffix = rawSuffix || (finalType.split('/')[1] ?? "");
+            }
+
+            const hashArray = await profileAsync(c, 'storage_hash', () => crypto.subtle.digest(
+                { name: 'SHA-1' },
+                finalBuffer
+            ));
+            const hash = buf2hex(hashArray);
+            const hashkey = `${hash}.${finalSuffix}`;
+
+            const result = await profileAsync(c, 'storage_put', () => putStorageObject(env, hashkey, finalBuffer, finalType, new URL(c.req.url).origin));
+            return c.json({ success: true, url: result.url });
         } catch (e: any) {
             console.error(e.message);
             const status = e.message?.includes('is not defined') ? 500 : 400;

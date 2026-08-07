@@ -272,6 +272,147 @@ describe('StorageService', () => {
             expect(res.status).toBe(500);
             expect(await res.text()).toBe('S3_ACCESS_KEY_ID is not defined');
         });
+
+        it('should convert GIF through the processor and store as WebP', async () => {
+            const putCalls: Array<{ key: string; type: string | undefined }> = [];
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = (async (input: any, init?: any) => {
+                const url = String(input);
+                if (url.includes('gif-processor')) {
+                    expect(init?.headers?.['Authorization']).toBe('Bearer test-secret');
+                    return new Response(new Uint8Array([0x52, 0x49, 0x46, 0x46]), {
+                        status: 200,
+                        headers: { 'Content-Type': 'image/webp' },
+                    });
+                }
+                return originalFetch(input, init);
+            }) as typeof fetch;
+
+            const r2Env = createMockEnv({
+                R2_BUCKET: {
+                    put: async (key: string, value: any, options?: R2PutOptions) => {
+                        putCalls.push({
+                            key,
+                            type: options?.httpMetadata && 'contentType' in options.httpMetadata
+                                ? options.httpMetadata.contentType
+                                : undefined,
+                        });
+                        return {
+                            key,
+                            version: '1',
+                            size: value?.size || 4,
+                            etag: 'etag',
+                            httpEtag: 'etag',
+                            uploaded: new Date(),
+                            storageClass: 'Standard',
+                            checksums: {} as R2Checksums,
+                            writeHttpMetadata: () => {},
+                        } as unknown as R2Object;
+                    },
+                } as unknown as R2Bucket,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+                GIF_PROCESSOR_URL: 'https://gif-processor.example.com/convert' as any,
+                GIF_PROCESSOR_SECRET: 'test-secret' as any,
+            });
+
+            const r2App = createAppWithEnv(r2Env, 1);
+            const formData = new FormData();
+            formData.append('key', 'anim.gif');
+            formData.append('file', new File(['GIF89a'], 'anim.gif', { type: 'image/gif' }));
+
+            const res = await r2App.request('/', {
+                method: 'POST',
+                body: formData,
+            }, r2Env);
+
+            globalThis.fetch = originalFetch;
+
+            expect(res.status).toBe(200);
+            expect(putCalls).toHaveLength(1);
+            expect(putCalls[0]?.key).toMatch(/^images\/[a-f0-9]+\.webp$/);
+            expect(putCalls[0]?.type).toBe('image/webp');
+            const payload = await res.json() as { success: boolean; url: string };
+            expect(payload.success).toBe(true);
+            expect(payload.url).toMatch(/^https:\/\/images\.example\.com\/images\/[a-f0-9]+\.webp$/);
+        });
+
+        it('should return error when GIF processor fails', async () => {
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = (async () => {
+                return new Response('processing error', { status: 500, statusText: 'Internal Server Error' });
+            }) as typeof fetch;
+
+            const r2Env = createMockEnv({
+                R2_BUCKET: {} as unknown as R2Bucket,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+                GIF_PROCESSOR_URL: 'https://gif-processor.example.com/convert' as any,
+                GIF_PROCESSOR_SECRET: '' as any,
+            });
+
+            const r2App = createAppWithEnv(r2Env, 1);
+            const formData = new FormData();
+            formData.append('key', 'anim.gif');
+            formData.append('file', new File(['GIF89a'], 'anim.gif', { type: 'image/gif' }));
+
+            const res = await r2App.request('/', {
+                method: 'POST',
+                body: formData,
+            }, r2Env);
+
+            globalThis.fetch = originalFetch;
+
+            expect(res.status).toBe(400);
+            expect(await res.text()).toContain('GIF processing failed');
+        });
+
+        it('should reject oversized files', async () => {
+            const putCalls: string[] = [];
+            const r2Env = createMockEnv({
+                R2_BUCKET: {
+                    put: async (key: string) => {
+                        putCalls.push(key);
+                        return {
+                            key,
+                            version: '1',
+                            size: 4,
+                            etag: 'etag',
+                            httpEtag: 'etag',
+                            uploaded: new Date(),
+                            storageClass: 'Standard',
+                            checksums: {} as R2Checksums,
+                            writeHttpMetadata: () => {},
+                        } as unknown as R2Object;
+                    },
+                } as unknown as R2Bucket,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+            });
+
+            const r2App = createAppWithEnv(r2Env, 1);
+            const formData = new FormData();
+            formData.append('key', 'big.png');
+            formData.append('file', new File([new Uint8Array(11 * 1024 * 1024)], 'big.png', { type: 'image/png' }));
+
+            const res = await r2App.request('/', {
+                method: 'POST',
+                body: formData,
+            }, r2Env);
+
+            expect(res.status).toBe(413);
+            expect(await res.text()).toContain('File too large');
+            expect(putCalls).toHaveLength(0);
+        });
     });
 
     describe('GET /blob/* - Stream file', () => {

@@ -343,6 +343,7 @@ export interface UserSubjectCollectionResponse {
 // ============================================================================
 
 export interface UploadResponse {
+  success: boolean;
   url: string;
 }
 

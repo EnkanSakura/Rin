@@ -10,7 +10,7 @@ const NAV_ITEM_DEFS = [
   { id: "tools", labelKey: "tools.title" },
   { id: "friends", labelKey: "friends.title" },
   { id: "bangumi", labelKey: "bangumi.title" },
-  { id: "about", labelKey: "about.title" },
+  // { id: "about", labelKey: "about.title" },
 ] as const;
 
 export function NavLinksSettings({

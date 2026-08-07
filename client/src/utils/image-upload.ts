@@ -1,7 +1,21 @@
+import imageCompression from "browser-image-compression";
 import { client } from "../app/runtime";
 import { encodeBlurhash } from "./blurhash";
 
 export const DEFAULT_IMAGE_MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+/** Image formats that must be uploaded as-is without re-encoding */
+const PASS_THROUGH_TYPES = new Set(["image/webp", "image/avif"]);
+
+/** GIF must be handled by the server (animated WebP conversion), never re-encoded in the browser */
+const GIF_TYPE = "image/gif";
+
+const COMPRESSION_OPTIONS = {
+  maxWidthOrHeight: 1920,
+  initialQuality: 0.8,
+  fileType: "image/webp",
+  useWebWorker: true,
+};
 
 export type UploadedImageResult = {
   url: string;
@@ -246,10 +260,41 @@ export async function enrichMarkdownImageMetadata(content: string): Promise<Mark
   };
 }
 
+/**
+ * Prepare an image file for upload according to its format:
+ * - WebP / AVIF: returned as-is (no re-encoding)
+ * - GIF: returned as-is (server converts to animated WebP)
+ * - Other static images (JPG/PNG/etc.): compressed and converted to WebP in the browser
+ *
+ * Throws on compression failure — never falls back to uploading the original file.
+ */
+export async function prepareImageForUpload(file: File): Promise<File> {
+  const mimeType = file.type.toLowerCase();
+
+  if (PASS_THROUGH_TYPES.has(mimeType) || mimeType === GIF_TYPE) {
+    return file;
+  }
+
+  try {
+    const compressed = await imageCompression(file, COMPRESSION_OPTIONS);
+    // browser-image-compression returns a Blob; wrap it as a File with a .webp name
+    return new File([compressed], `${file.name.replace(/\.[^/.]+$/, "")}.webp`, {
+      type: "image/webp",
+    });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `Image compression failed: ${error.message}`
+        : "Image compression failed",
+    );
+  }
+}
+
 export async function uploadImageFile(file: File): Promise<UploadedImageResult> {
+  const preparedFile = await prepareImageForUpload(file);
   const [uploadResult, metadataResult] = await Promise.allSettled([
-    client.storage.upload(file, file.name),
-    generateImageMetadata(file),
+    client.storage.upload(preparedFile, preparedFile.name),
+    generateImageMetadata(preparedFile),
   ]);
 
   if (uploadResult.status === "rejected") {

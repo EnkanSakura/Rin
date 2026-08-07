@@ -218,6 +218,8 @@ jobs:
           RSS_TITLE: ${{ vars.RSS_TITLE || '' }}
           RSS_DESCRIPTION: ${{ vars.RSS_DESCRIPTION || '' }}
           CACHE_STORAGE_MODE: ${{ vars.CACHE_STORAGE_MODE || 's3' }}
+          GIF_PROCESSOR_URL: ${{ vars.GIF_PROCESSOR_URL || '' }}
+          GIF_PROCESSOR_SECRET: ${{ secrets.GIF_PROCESSOR_SECRET || '' }}
         run: |
           set -euo pipefail
           if [[ "${{ needs.prepare.outputs.is_production }}" == "true" ]]; then

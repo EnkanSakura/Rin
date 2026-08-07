@@ -216,7 +216,7 @@
         "desc": "Browse articles by topic"
       },
       "bangumi": {
-        "title": "Bangumi",
+        "title": "追番",
         "desc": "Bangumi 收藏列表"
       },
       "tools": {
@@ -587,10 +587,10 @@
       }
     },
     "bangumi": {
-      "title": "Bangumi",
+      "title": "追番",
       "enable": {
-        "title": "啟用 Bangumi",
-        "desc": "在導航欄顯示 Bangumi 頁面"
+        "title": "啟用追番",
+        "desc": "在導航欄顯示追番頁面"
       },
       "user_id": {
         "title": "Bangumi 用戶 ID",
@@ -623,7 +623,7 @@
   "status": "狀態",
   "summary": "簡介",
   "tags": "標籤",
-  "timeline": "時間軸",
+  "timeline": "時間綫",
   "title": "標題",
   "title_empty": "標題不能為空",
   "top": {
@@ -851,7 +851,7 @@
   "total_tags": "共 {{count}} 個標籤",
   "anonymous": "匿名",
   "bangumi": {
-    "title": "Bangumi",
+    "title": "追番",
     "description": "展示在 Bangumi 上的收藏記錄",
     "all": "全部",
     "all_status": "全部狀態",
