@@ -29,16 +29,20 @@ async function convertGifToWebP(
     }
 
     const headers: Record<string, string> = {
-        "Content-Type": file.type || "application/octet-stream",
+        ...(processorSecret && typeof processorSecret === "string" && processorSecret.trim() !== ""
+            ? { Authorization: `Bearer ${processorSecret}` }
+            : {}),
     };
-    if (processorSecret && typeof processorSecret === "string" && processorSecret.trim() !== "") {
-        headers["Authorization"] = `Bearer ${processorSecret}`;
-    }
+
+    // The processor expects multipart/form-data with a "file" field (multer-based API).
+    // Never set Content-Type manually — fetch generates the correct multipart boundary.
+    const formData = new FormData();
+    formData.append("file", file, file.name || "image.gif");
 
     const response = await fetch(processorUrl, {
         method: "POST",
         headers,
-        body: file,
+        body: formData,
     });
 
     if (!response.ok) {

@@ -280,6 +280,9 @@ describe('StorageService', () => {
                 const url = String(input);
                 if (url.includes('gif-processor')) {
                     expect(init?.headers?.['Authorization']).toBe('Bearer test-secret');
+                    // Processor expects multipart/form-data with a "file" field
+                    expect(init?.body).toBeInstanceOf(FormData);
+                    expect((init?.body as FormData).get('file')).toBeInstanceOf(File);
                     return new Response(new Uint8Array([0x52, 0x49, 0x46, 0x46]), {
                         status: 200,
                         headers: { 'Content-Type': 'image/webp' },
