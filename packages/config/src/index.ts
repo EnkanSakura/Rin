@@ -38,6 +38,8 @@ export const SERVER_CONFIG_DEFAULTS = new Map(
     "webhook.content_type": "application/json",
     "webhook.headers": "{}",
     "webhook.body_template": "{\"content\":\"{{message}}\"}",
+    "image_compression.gif_processor_url": "",
+    "image_compression.gif_processor_secret": "",
   }),
 );
 
@@ -58,7 +60,10 @@ export const AI_CONFIG_KEYS = [
   `${AI_CONFIG_PREFIX}api_url`,
 ] as const;
 
-export const SENSITIVE_SERVER_CONFIG_FIELDS = [`${AI_CONFIG_PREFIX}api_key`] as const;
+export const SENSITIVE_SERVER_CONFIG_FIELDS = [
+  `${AI_CONFIG_PREFIX}api_key`,
+  "image_compression.gif_processor_secret",
+] as const;
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
   enabled: false,

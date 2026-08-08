@@ -65,6 +65,7 @@ export function Settings() {
   const [draft, setDraft] = useState<SettingsDraft>({ clientConfig: {}, serverConfig: {} });
   const [initialDraft, setInitialDraft] = useState<SettingsDraft>({ clientConfig: {}, serverConfig: {} });
   const [hasStoredAiApiKey, setHasStoredAiApiKey] = useState(false);
+  const [hasStoredGifProcessorSecret, setHasStoredGifProcessorSecret] = useState(false);
   const ref = useRef(false);
   const initialDraftRef = useRef<SettingsDraft>({ clientConfig: {}, serverConfig: {} });
   const { showAlert, AlertUI } = useAlert();
@@ -81,6 +82,7 @@ export function Settings() {
         setInitialDraft(state.draft);
         initialDraftRef.current = state.draft;
         setHasStoredAiApiKey(state.hasStoredAiApiKey);
+        setHasStoredGifProcessorSecret(state.hasStoredGifProcessorSecret);
         mergeSessionConfig(state.draft.clientConfig);
         applyThemeColor(getDraftThemeColor(state.draft));
       })
@@ -123,6 +125,7 @@ export function Settings() {
       setInitialDraft(state.draft);
       initialDraftRef.current = state.draft;
       setHasStoredAiApiKey(state.hasStoredAiApiKey || aiValue.apiKey.trim().length > 0);
+      setHasStoredGifProcessorSecret(state.hasStoredGifProcessorSecret);
       mergeSessionConfig(state.draft.clientConfig);
       window.dispatchEvent(new Event("storage"));
       showAlert(t("settings.ai_summary.save_success"));
@@ -195,6 +198,7 @@ export function Settings() {
           { key: "bangumi", label: t("settings.bangumi.title") },
           { key: "friend", label: t("settings.friend.title") },
           { key: "maintenance", label: t("settings.maintenance.title") },
+          { key: "image_compression", label: t("settings.image_compression.title") },
         ].map((tab, i) => (
           <button
             key={tab.key}
@@ -731,6 +735,31 @@ export function Settings() {
               if (updates.apiKey !== undefined) {
                 setConfigValue("server", "ai_summary.api_key", updates.apiKey);
               }
+            }}
+          />
+          </>
+          )}
+
+          {activeTab === 7 && (
+          <>
+          <ItemInput
+            title={t("settings.image_compression.gif_processor_url.title")}
+            description={t("settings.image_compression.gif_processor_url.desc")}
+            configKeyTitle="URL"
+            value={String(serverConfig.get("image_compression.gif_processor_url") ?? "")}
+            placeholder="https://your-gif-processor.example.com/api/img2webp"
+            onChange={(value) => {
+              setConfigValue("server", "image_compression.gif_processor_url", value);
+            }}
+          />
+          <ItemInput
+            title={t("settings.image_compression.gif_processor_secret.title")}
+            description={t("settings.image_compression.gif_processor_secret.desc")}
+            configKeyTitle="Secret"
+            value={String(serverConfig.get("image_compression.gif_processor_secret") ?? "")}
+            placeholder={hasStoredGifProcessorSecret ? t("settings.image_compression.gif_processor_secret.placeholder_set") : ""}
+            onChange={(value) => {
+              setConfigValue("server", "image_compression.gif_processor_secret", value);
             }}
           />
           </>

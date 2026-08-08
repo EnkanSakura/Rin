@@ -607,6 +607,18 @@
         "title": "カテゴリ",
         "desc": "番組計画ページに表示するカテゴリを選択。ドラッグで並び替え"
       }
+    },
+    "image_compression": {
+      "title": "画像圧縮",
+      "gif_processor_url": {
+        "title": "GIF プロセッサ URL",
+        "desc": "GIF を Animated WebP に変換するプロセッサ API の URL"
+      },
+      "gif_processor_secret": {
+        "title": "GIF プロセッサ シークレット",
+        "desc": "GIF プロセッサ API 呼び出し時の認証キー。空欄の場合は保存済みの値を保持",
+        "placeholder_set": "シークレット設定済み。空欄のままにしてください"
+      }
     }
   },
   "sitename": "サイト名",

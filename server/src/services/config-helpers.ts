@@ -166,6 +166,13 @@ export async function persistRegularConfig(
   updates: Record<string, unknown>,
 ) {
   for (const key in updates) {
+    // Never overwrite a stored secret with an empty/masked value from the client.
+    if (SENSITIVE_SERVER_CONFIG_FIELDS.includes(key as (typeof SENSITIVE_SERVER_CONFIG_FIELDS)[number])) {
+      const value = updates[key];
+      if (value === undefined || value === "" || value === "••••••••") {
+        continue;
+      }
+    }
     await config.set(key, updates[key], false);
   }
   await config.save();

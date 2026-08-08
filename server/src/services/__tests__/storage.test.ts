@@ -108,12 +108,12 @@ describe('StorageService', () => {
         `);
     }
 
-    function createAppWithEnv(appEnv: Env, uid?: number) {
+    function createAppWithEnv(appEnv: Env, uid?: number, serverConfig?: TestCacheImpl) {
         const serviceApp = new Hono<{ Bindings: Env; Variables: Variables }>();
         serviceApp.use(createMiddleware<{ Bindings: Env; Variables: Variables }>(async (c, next) => {
             c.set('db', db);
             c.set('cache', new TestCacheImpl());
-            c.set('serverConfig', new TestCacheImpl());
+            c.set('serverConfig', serverConfig ?? new TestCacheImpl());
             c.set('clientConfig', new TestCacheImpl());
             c.set('jwt', {
                 sign: async (payload: any) => `mock_token_${payload.id}`,
@@ -315,11 +315,12 @@ describe('StorageService', () => {
                 S3_BUCKET: '' as any,
                 S3_ACCESS_KEY_ID: '',
                 S3_SECRET_ACCESS_KEY: '',
-                GIF_PROCESSOR_URL: 'https://gif-processor.example.com/convert' as any,
-                GIF_PROCESSOR_SECRET: 'test-secret' as any,
             });
 
-            const r2App = createAppWithEnv(r2Env, 1);
+            const mockServerConfig = new TestCacheImpl();
+            await mockServerConfig.set('image_compression.gif_processor_url', 'https://gif-processor.example.com/convert');
+            await mockServerConfig.set('image_compression.gif_processor_secret', 'test-secret');
+            const r2App = createAppWithEnv(r2Env, 1, mockServerConfig);
             const formData = new FormData();
             formData.append('key', 'anim.gif');
             formData.append('file', new File(['GIF89a'], 'anim.gif', { type: 'image/gif' }));
@@ -353,11 +354,11 @@ describe('StorageService', () => {
                 S3_BUCKET: '' as any,
                 S3_ACCESS_KEY_ID: '',
                 S3_SECRET_ACCESS_KEY: '',
-                GIF_PROCESSOR_URL: 'https://gif-processor.example.com/convert' as any,
-                GIF_PROCESSOR_SECRET: '' as any,
             });
 
-            const r2App = createAppWithEnv(r2Env, 1);
+            const mockServerConfig = new TestCacheImpl();
+            await mockServerConfig.set('image_compression.gif_processor_url', 'https://gif-processor.example.com/convert');
+            const r2App = createAppWithEnv(r2Env, 1, mockServerConfig);
             const formData = new FormData();
             formData.append('key', 'anim.gif');
             formData.append('file', new File(['GIF89a'], 'anim.gif', { type: 'image/gif' }));

@@ -22,7 +22,6 @@ const WORKER_SECRET_KEYS = [
   "RIN_GITHUB_CLIENT_SECRET",
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
-  "GIF_PROCESSOR_SECRET",
 ] as const;
 
 function isQueueAlreadyPresentError(stderr: string) {
@@ -158,7 +157,6 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
   const rssTitle = env("RSS_TITLE", "");
   const rssDescription = env("RSS_DESCRIPTION", "");
   const cacheStorageMode = env("CACHE_STORAGE_MODE", "s3");
-  const gifProcessorUrl = env("GIF_PROCESSOR_URL", "");
   const name = env("NAME", "Rin");
   const description = env("DESCRIPTION", "A lightweight personal blogging system");
   const avatar = env("AVATAR", "");
@@ -211,7 +209,6 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
       RSS_TITLE = "${rssTitle}"
       RSS_DESCRIPTION = "${rssDescription}"
       CACHE_STORAGE_MODE = "${cacheStorageMode}"
-      GIF_PROCESSOR_URL = "${gifProcessorUrl}"
       NAME = "${name}"
       DESCRIPTION = "${description}"
       AVATAR = "${avatar}"

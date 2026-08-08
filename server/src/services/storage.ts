@@ -18,17 +18,21 @@ const GIF_TYPE = "image/gif";
  * Convert a GIF to Animated WebP via the configured GIF processor API.
  * Returns { bytes, contentType } or throws with a descriptive message.
  */
-async function convertGifToWebP(env: Env, file: File): Promise<{ bytes: ArrayBuffer; contentType: string }> {
-    const processorUrl = env.GIF_PROCESSOR_URL;
-    if (!processorUrl) {
-        throw new Error("GIF processing is not configured (GIF_PROCESSOR_URL missing)");
+async function convertGifToWebP(
+    serverConfig: { get(key: string): Promise<unknown> },
+    file: File,
+): Promise<{ bytes: ArrayBuffer; contentType: string }> {
+    const processorUrl = await serverConfig.get("image_compression.gif_processor_url");
+    const processorSecret = await serverConfig.get("image_compression.gif_processor_secret");
+    if (!processorUrl || typeof processorUrl !== "string" || processorUrl.trim() === "") {
+        throw new Error("GIF processing is not configured (image_compression.gif_processor_url missing)");
     }
 
     const headers: Record<string, string> = {
         "Content-Type": file.type || "application/octet-stream",
     };
-    if (env.GIF_PROCESSOR_SECRET) {
-        headers["Authorization"] = `Bearer ${env.GIF_PROCESSOR_SECRET}`;
+    if (processorSecret && typeof processorSecret === "string" && processorSecret.trim() !== "") {
+        headers["Authorization"] = `Bearer ${processorSecret}`;
     }
 
     const response = await fetch(processorUrl, {
@@ -83,7 +87,7 @@ export function StorageService(): Hono {
 
             if (file.type === GIF_TYPE) {
                 // GIF must keep animation — convert via processor, never store the raw GIF as WebP
-                const converted = await convertGifToWebP(env, file);
+                const converted = await convertGifToWebP(c.get('serverConfig'), file);
                 finalBuffer = converted.bytes;
                 finalType = converted.contentType;
                 finalSuffix = "webp";

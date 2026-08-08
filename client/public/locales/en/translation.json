@@ -616,6 +616,18 @@
         "title": "Categories",
         "desc": "Choose which Bangumi categories to display. Drag to reorder."
       }
+    },
+    "image_compression": {
+      "title": "Image Compression",
+      "gif_processor_url": {
+        "title": "GIF Processor URL",
+        "desc": "API URL of the processor that converts GIF to Animated WebP"
+      },
+      "gif_processor_secret": {
+        "title": "GIF Processor Secret",
+        "desc": "Auth key used when calling the GIF processor API. Leave empty to keep the stored value",
+        "placeholder_set": "Secret set. Leave empty to keep it"
+      }
     }
   },
   "sitename": "Site Name",

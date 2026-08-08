@@ -12,7 +12,7 @@ const GIF_TYPE = "image/gif";
 
 const COMPRESSION_OPTIONS = {
   maxWidthOrHeight: 1920,
-  initialQuality: 0.8,
+  initialQuality: 0.9,
   fileType: "image/webp",
   useWebWorker: true,
 };

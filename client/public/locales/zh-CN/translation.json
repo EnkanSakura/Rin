@@ -616,6 +616,18 @@
         "title": "条目分类",
         "desc": "选择追番页面中展示的条目分类，拖拽可调整顺序"
       }
+    },
+    "image_compression": {
+      "title": "图片压缩",
+      "gif_processor_url": {
+        "title": "GIF 处理器 URL",
+        "desc": "将 GIF 转换为 Animated WebP 的处理器 API 地址"
+      },
+      "gif_processor_secret": {
+        "title": "GIF 处理器密钥",
+        "desc": "调用 GIF 处理器 API 时的鉴权密钥，留空则保持已保存的值不变",
+        "placeholder_set": "已设置密钥，留空保持不变"
+      }
     }
   },
   "sitename": "站点名称",

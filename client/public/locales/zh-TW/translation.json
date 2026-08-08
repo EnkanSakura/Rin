@@ -616,6 +616,18 @@
         "title": "條目分類",
         "desc": "選擇 Bangumi 頁面中展示的條目分類，拖曳可調整順序"
       }
+    },
+    "image_compression": {
+      "title": "圖片壓縮",
+      "gif_processor_url": {
+        "title": "GIF 處理器 URL",
+        "desc": "將 GIF 轉換為 Animated WebP 的處理器 API 位址"
+      },
+      "gif_processor_secret": {
+        "title": "GIF 處理器金鑰",
+        "desc": "呼叫 GIF 處理器 API 時的鑑權金鑰，留空則保持已儲存的值不變",
+        "placeholder_set": "已設定金鑰，留空保持不變"
+      }
     }
   },
   "sitename": "網站名稱",

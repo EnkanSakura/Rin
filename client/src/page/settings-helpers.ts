@@ -14,6 +14,7 @@ export type SettingsDraft = {
 export type SettingsLoadState = {
   draft: SettingsDraft;
   hasStoredAiApiKey: boolean;
+  hasStoredGifProcessorSecret: boolean;
 };
 
 export const AI_PROVIDER_PRESETS = [
@@ -60,6 +61,10 @@ export function normalizeSettingsState(
   if (hasStoredAiApiKey) {
     serverConfig["ai_summary.api_key"] = "";
   }
+  const hasStoredGifProcessorSecret = serverConfig["image_compression.gif_processor_secret"] === MASKED_SECRET;
+  if (hasStoredGifProcessorSecret) {
+    serverConfig["image_compression.gif_processor_secret"] = "";
+  }
 
   return {
     draft: {
@@ -67,6 +72,7 @@ export function normalizeSettingsState(
       serverConfig,
     },
     hasStoredAiApiKey,
+    hasStoredGifProcessorSecret,
   };
 }
 
