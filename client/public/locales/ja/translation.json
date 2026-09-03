@@ -10,7 +10,8 @@
     "queue_status_description": "AI 要約キューの進行状況、最近のタスク結果、失敗内容を確認します。",
     "settings_description": "サイトの挙動、連携設定、公開ルールを一か所で管理します。",
     "title": "管理画面",
-    "writing_description": "非公開の管理ワークスペースから記事を作成、編集、公開します。"
+    "writing_description": "非公開の管理ワークスペースから記事を作成、編集、公開します。",
+    "verification_files_description": "ドメイン所有権確認用の TXT ファイルを管理します。Worker はアクセスパスに応じて内容を動的に返します。"
   },
   "compat_tasks": {
     "title": "互換タスク",
@@ -888,5 +889,31 @@
     "qr_code": { "title": "QRコード生成", "desc": "テキストやリンクからQRコードを生成" },
     "markdown": { "title": "Markdown プレビュー", "desc": "リアルタイム Markdown 編集とプレビュー" },
     "password": { "title": "パスワード生成", "desc": "安全なランダムパスワードを生成" }
+  },
+  "verification_files": {
+    "title": "ドメイン認証ファイル",
+    "add": "追加",
+    "edit": "編集",
+    "delete": "削除",
+    "deleting": "削除中",
+    "save": "保存",
+    "saving": "保存中",
+    "cancel": "キャンセル",
+    "open": "開く",
+    "loading": "認証ファイルを読み込み中...",
+    "load_failed": "読み込みに失敗しました",
+    "empty_title": "認証ファイルがありません",
+    "empty_description": "上の「追加」から最初の TXT 認証ファイルを作成してください。",
+    "save_success": "保存しました",
+    "delete_success": "削除しました",
+    "delete_confirm_title": "認証ファイルを削除",
+    "delete_confirm_description": "{{path}} を削除しますか？",
+    "guide_title": "ドメイン認証 TXT ファイル",
+    "guide_description": "ファイルを追加すると、一致するパスへのアクセス時に Worker が内容を text/plain で返します。検索エンジンなどのドメイン所有権確認に利用できます。",
+    "path_label": "ファイルパス",
+    "path_placeholder": "例: /google123.txt または /.well-known/google123.txt",
+    "path_hint": "/ で始まり .txt で終わる必要があります。/api/* パス・パストラバーサル・特殊文字は使用できません。",
+    "content_label": "ファイル内容",
+    "content_placeholder": "プラットフォーム提供の認証内容を貼り付けます（例: google-site-verification=xxx）"
   }
 }

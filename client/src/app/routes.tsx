@@ -31,6 +31,7 @@ import { Settings } from "../page/settings";
 import { TimelinePage } from "../page/timeline";
 import { ToolsPage } from "../page/tools";
 import { WritingPage } from "../page/writing";
+import { VerificationFilesPage } from "../page/verification-files";
 import { ProfileContext } from "../state/profile";
 import { tryInt } from "../utils/int";
 import { useTranslation } from "react-i18next";
@@ -98,6 +99,10 @@ export function AppRoutes() {
 
       <AdminRoute path="/admin/compat-tasks" requirePermission title={t("compat_tasks.title")} description={t("admin.compat_tasks_description")}>
         <CompatTasksPage />
+      </AdminRoute>
+
+      <AdminRoute path="/admin/verification-files" requirePermission title={t("verification_files.title")} description={t("admin.verification_files_description")}>
+        <VerificationFilesPage />
       </AdminRoute>
 
       <AdminRoute path="/admin/writing" requirePermission title={t("writing")} description={t("admin.writing_description")}>

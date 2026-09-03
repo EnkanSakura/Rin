@@ -10,7 +10,8 @@
     "queue_status_description": "Inspect AI summary queue progress, recent task results, and failures.",
     "settings_description": "Manage site behavior, integrations, and publishing rules in one place.",
     "title": "Admin",
-    "writing_description": "Write, edit, and publish content from the private management workspace."
+    "writing_description": "Write, edit, and publish content from the private management workspace.",
+    "verification_files_description": "Manage TXT files used for domain ownership verification, served dynamically by the Worker on matching paths."
   },
   "compat_tasks": {
     "title": "Compatibility Tasks",
@@ -897,5 +898,31 @@
     "qr_code": { "title": "QR Code Generator", "desc": "Generate QR codes from text or links" },
     "markdown": { "title": "Markdown Preview", "desc": "Real-time Markdown editing and preview" },
     "password": { "title": "Password Generator", "desc": "Generate secure random passwords" }
+  },
+  "verification_files": {
+    "title": "Verification Files",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting",
+    "save": "Save",
+    "saving": "Saving",
+    "cancel": "Cancel",
+    "open": "Open",
+    "loading": "Loading verification files...",
+    "load_failed": "Failed to load",
+    "empty_title": "No verification files yet",
+    "empty_description": "Click “Add” above to create the first TXT verification file.",
+    "save_success": "Saved",
+    "delete_success": "Deleted",
+    "delete_confirm_title": "Delete verification file",
+    "delete_confirm_description": "Delete {{path}}?",
+    "guide_title": "Domain verification TXT files",
+    "guide_description": "Once a file is added, the Worker serves its content as text/plain on the matching path, letting search engines and other services verify domain ownership.",
+    "path_label": "File path",
+    "path_placeholder": "e.g. /google123.txt or /.well-known/google123.txt",
+    "path_hint": "Must start with / and end with .txt; /api/* paths, path traversal and special characters are not allowed.",
+    "content_label": "File content",
+    "content_placeholder": "Paste the verification content provided by the platform, e.g. google-site-verification=xxx"
   }
 }

@@ -10,7 +10,8 @@
     "queue_status_description": "查看 AI 摘要佇列進度、最近任務結果與失敗資訊。",
     "settings_description": "在統一的後台空間中管理站點行為、整合配置與發佈規則。",
     "title": "後台管理",
-    "writing_description": "在獨立的管理工作區中編寫、編輯並發佈內容。"
+    "writing_description": "在獨立的管理工作區中編寫、編輯並發佈內容。",
+    "verification_files_description": "管理用於網域所有權驗證的 TXT 檔案，Worker 會依存取路徑動態回傳對應內容。"
   },
   "compat_tasks": {
     "title": "相容任務",
@@ -897,5 +898,31 @@
     "qr_code": { "title": "二維碼生成", "desc": "將文字或連結生成二維碼" },
     "markdown": { "title": "Markdown 預覽", "desc": "即時 Markdown 編輯與預覽" },
     "password": { "title": "密碼產生器", "desc": "產生安全隨機密碼" }
+  },
+  "verification_files": {
+    "title": "網域驗證檔案",
+    "add": "新增",
+    "edit": "編輯",
+    "delete": "刪除",
+    "deleting": "刪除中",
+    "save": "儲存",
+    "saving": "儲存中",
+    "cancel": "取消",
+    "open": "開啟",
+    "loading": "正在載入驗證檔案...",
+    "load_failed": "載入失敗",
+    "empty_title": "尚無驗證檔案",
+    "empty_description": "點擊上方「新增」建立第一個 TXT 驗證檔案。",
+    "save_success": "已儲存",
+    "delete_success": "已刪除",
+    "delete_confirm_title": "刪除驗證檔案",
+    "delete_confirm_description": "確定刪除 {{path}} 嗎？",
+    "guide_title": "網域驗證 TXT 檔案",
+    "guide_description": "新增檔案後，存取對應路徑時 Worker 會以 text/plain 回傳下方內容，供搜尋引擎等服務驗證網域所有權。",
+    "path_label": "檔案路徑",
+    "path_placeholder": "例如 /google123.txt 或 /.well-known/google123.txt",
+    "path_hint": "必須以 / 開頭並以 .txt 結尾；不支援 /api/* 路徑、路徑穿越或特殊字元。",
+    "content_label": "檔案內容",
+    "content_placeholder": "貼上平台提供的驗證內容，例如 google-site-verification=xxx"
   }
 }

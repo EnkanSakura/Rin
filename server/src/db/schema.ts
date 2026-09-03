@@ -112,6 +112,14 @@ export const cache = sqliteTable("cache", {
     keyTypeUnique: unique().on(table.key, table.type),
 }));
 
+export const verificationFiles = sqliteTable("verification_files", {
+    id: integer("id").primaryKey(),
+    path: text("path").notNull().unique(),
+    content: text("content").notNull(),
+    createdAt: created_at,
+    updatedAt: updated_at,
+});
+
 export const feedsRelations = relations(feeds, ({ many, one }) => ({
     hashtags: many(feedHashtags),
     user: one(users, {

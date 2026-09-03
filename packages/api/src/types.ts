@@ -232,6 +232,34 @@ export interface UpdateFriendRequest {
 }
 
 // ============================================================================
+// Domain Verification File Types
+// ============================================================================
+
+export interface VerificationFile {
+  id: number;
+  /** Public request pathname, e.g. "/google123.txt" or "/.well-known/google123.txt" */
+  path: string;
+  /** Plain-text body served for the path */
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VerificationFileListResponse {
+  list: VerificationFile[];
+}
+
+export interface CreateVerificationFileRequest {
+  path: string;
+  content: string;
+}
+
+export interface UpdateVerificationFileRequest {
+  path: string;
+  content: string;
+}
+
+// ============================================================================
 // Moment Types
 // ============================================================================
 

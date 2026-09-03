@@ -10,6 +10,7 @@ import { RSSService } from "../services/rss";
 import { BlobService, StorageService } from "../services/storage";
 import { TagService } from "../services/tag";
 import { UserService } from "../services/user";
+import { VerificationFileService } from "../services/verification-files";
 
 export function registerRoutes(app: RinApp) {
   app.get("/", (c) => c.text("Hi"));
@@ -24,6 +25,7 @@ export function registerRoutes(app: RinApp) {
   app.route("/friend", FriendService());
   app.route("/moments", MomentsService());
   app.route("/user", UserService());
+  app.route("/verification", VerificationFileService());
   app.route("/auth", PasswordAuthService());
   app.route("/config", ConfigService());
   app.route("/", RSSService());

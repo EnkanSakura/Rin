@@ -24,6 +24,9 @@ import type {
   FriendListResponse,
   CreateFriendRequest,
   UpdateFriendRequest,
+  VerificationFileListResponse,
+  CreateVerificationFileRequest,
+  UpdateVerificationFileRequest,
   Moment,
   CreateMomentRequest,
   ConfigType,
@@ -419,6 +422,33 @@ class FriendAPI {
 }
 
 /**
+ * Domain Verification File API methods
+ */
+class VerificationFilesAPI {
+  constructor(private http: HttpClient) {}
+
+  // GET /api/verification
+  async list(): Promise<ApiResponse<VerificationFileListResponse>> {
+    return this.http.get<VerificationFileListResponse>("/api/verification");
+  }
+
+  // POST /api/verification
+  async create(body: CreateVerificationFileRequest): Promise<ApiResponse<{ id: number }>> {
+    return this.http.post<{ id: number }>("/api/verification", body);
+  }
+
+  // PUT /api/verification/:id
+  async update(id: number, body: UpdateVerificationFileRequest): Promise<ApiResponse<void>> {
+    return this.http.put<void>(`/api/verification/${id}`, body);
+  }
+
+  // DELETE /api/verification/:id
+  async delete(id: number): Promise<ApiResponse<void>> {
+    return this.http.delete<void>(`/api/verification/${id}`);
+  }
+}
+
+/**
  * Moments API methods
  */
 class MomentsAPI {
@@ -662,6 +692,7 @@ export class ApiClient {
   storage: StorageAPI;
   search: SearchAPI;
   auth: AuthAPI;
+  verificationFiles: VerificationFilesAPI;
   wp: WordPressAPI;
   rss: RSSAPI;
 
@@ -678,6 +709,7 @@ export class ApiClient {
     this.storage = new StorageAPI(this.http);
     this.search = new SearchAPI(this.http);
     this.auth = new AuthAPI(this.http);
+    this.verificationFiles = new VerificationFilesAPI(this.http);
     this.wp = new WordPressAPI(this.http);
     this.rss = new RSSAPI(baseUrl);
   }

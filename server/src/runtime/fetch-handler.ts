@@ -1,4 +1,5 @@
 import { getApp } from "./app-instance";
+import { isValidVerificationPath } from "../utils/verification-path";
 
 const ROOT_FEED_PATTERN = /^\/(rss\.xml|atom\.xml|rss\.json|feed\.json|feed\.xml)$/;
 const APP_PUBLIC_ROUTE_PATTERN = /^\/(favicon|favicon\.ico)(?:\/|$)/;
@@ -57,6 +58,48 @@ async function serveSpaEntry(request: Request, env: Env) {
   return null;
 }
 
+/**
+ * Serve domain-verification TXT files (e.g. /google123.txt, /.well-known/google123.txt)
+ * from D1 when an entry exists for the request pathname. Returns null when the pathname
+ * is not a legal verification path, the method is not GET/HEAD, the binding is missing,
+ * the database lookup fails, or no row matches - the caller then continues with the
+ * regular routing (assets, SPA, ...).
+ */
+async function tryServeVerificationFile(request: Request, env: Env) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return null;
+  }
+
+  if (!env.DB) {
+    return null;
+  }
+
+  const pathname = new URL(request.url).pathname;
+  if (!isValidVerificationPath(pathname)) {
+    return null;
+  }
+
+  try {
+    const row = await env.DB.prepare(
+      "SELECT content FROM verification_files WHERE path = ?",
+    ).bind(pathname).first();
+
+    if (!row || typeof row.content !== "string") {
+      return null;
+    }
+
+    return new Response(row.content, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    // Any database error must not break the existing routing.
+    return null;
+  }
+}
+
 export async function handleFetch(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -71,6 +114,15 @@ export async function handleFetch(request: Request, env: Env): Promise<Response>
 
   if (isAppPublicRoute(pathname)) {
     return getApp().fetch(request, env);
+  }
+
+  // Domain verification TXT files from D1 take precedence over other handlers for
+  // legal "*.txt" paths; when absent we continue with assets/SPA as before.
+  if (isValidVerificationPath(pathname)) {
+    const verificationFile = await tryServeVerificationFile(request, env);
+    if (verificationFile) {
+      return verificationFile;
+    }
   }
 
   if (isStaticAssetRequest(pathname)) {

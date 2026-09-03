@@ -154,6 +154,17 @@ export function createMockDB() {
 
         CREATE INDEX IF NOT EXISTS idx_cache_type ON cache(type);
         CREATE INDEX IF NOT EXISTS idx_cache_key ON cache(key);
+
+        -- Verification files table (domain ownership TXT files)
+        CREATE TABLE IF NOT EXISTS verification_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL UNIQUE,
+            content TEXT NOT NULL,
+            created_at INTEGER DEFAULT (unixepoch()),
+            updated_at INTEGER DEFAULT (unixepoch())
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_verification_files_path ON verification_files(path);
     `);
 
     return { db, sqlite };
