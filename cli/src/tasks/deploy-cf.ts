@@ -1,7 +1,12 @@
 import { $ } from "bun";
 import { readdir, unlink } from "node:fs/promises";
 import stripIndent from "strip-indent";
-import { fixTopField, getMigrationFileVersion, getMigrationVersion, isInfoExist, updateMigrationVersion } from "../lib/db-migration";
+import {
+  fixTopField,
+  getMigrationFileVersion,
+  getMigrationVersion,
+  updateMigrationVersion,
+} from "../lib/db-migration";
 const bunExec = process.execPath;
 
 function env(name: string, defaultValue?: string, required = false) {
@@ -162,6 +167,7 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
   const avatar = env("AVATAR", "");
   const pageSize = env("PAGE_SIZE", "5");
   const rssEnable = env("RSS_ENABLE", "false");
+  const frontendUrl = env("FRONTEND_URL", "");
 
   let finalS3Endpoint = s3Endpoint;
   let finalS3Bucket = s3Bucket;
@@ -214,6 +220,7 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
       AVATAR = "${avatar}"
       PAGE_SIZE = "${pageSize}"
       RSS_ENABLE = "${rssEnable}"
+      FRONTEND_URL = "${frontendUrl}"
 
       [placement]
       mode = "smart"
@@ -379,7 +386,8 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
   }
 
   const migrationVersion = await getMigrationVersion("remote", dbName);
-  const infoExists = await isInfoExist("remote", dbName);
+  // Migration 0011 indexes feeds.top, so repair the column before pending SQL runs.
+  await fixTopField("remote", dbName);
   const files = await readdir("./server/sql", { recursive: false });
   const sqlFiles = files
     .filter((name) => name.endsWith(".sql"))
@@ -401,8 +409,6 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
       await updateMigrationVersion("remote", dbName, lastVersion);
     }
   }
-  await fixTopField("remote", dbName, infoExists);
-
   if (target === "server") {
     await $`${bunExec} x wrangler deploy`;
     await syncWorkerSecrets(workerName);
