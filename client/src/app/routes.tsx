@@ -28,6 +28,8 @@ import { ProfilePage } from "../page/profile";
 import { QueueStatusPage } from "../page/queue-status";
 import { SearchPage } from "../page/search";
 import { Settings } from "../page/settings";
+import { AdminShowcasePage } from "../page/admin-showcase";
+import { ShowcasePage } from "../page/showcase";
 import { TimelinePage } from "../page/timeline";
 import { ToolsPage } from "../page/tools";
 import { WritingPage } from "../page/writing";
@@ -69,6 +71,10 @@ export function AppRoutes() {
         <BangumiPage />
       </AppRoute>
 
+      <AppRoute path="/showcase">
+        <ShowcasePage />
+      </AppRoute>
+
       <AppRoute path="/tools">
         <ToolsPage />
       </AppRoute>
@@ -103,6 +109,10 @@ export function AppRoutes() {
 
       <AdminRoute path="/admin/verification-files" requirePermission title={t("verification_files.title")} description={t("admin.verification_files_description")}>
         <VerificationFilesPage />
+      </AdminRoute>
+
+      <AdminRoute path="/admin/showcase" requirePermission title={t("showcase.admin.title")} description={t("admin.showcase_description")}>
+        <AdminShowcasePage />
       </AdminRoute>
 
       <AdminRoute path="/admin/writing" requirePermission title={t("writing")} description={t("admin.writing_description")}>

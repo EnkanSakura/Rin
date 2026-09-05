@@ -17,6 +17,7 @@ const NAV_ITEM_MAP: Record<string, NavItemDef> = {
   tools: { labelKey: "tools.title", href: "/tools" },
   friends: { labelKey: "friends.title", href: "/friends" },
   bangumi: { labelKey: "bangumi.title", href: "/bangumi" },
+  showcase: { labelKey: "showcase.title", href: "/showcase" },
   about: { labelKey: "about.title", href: "/about" },
 };
 

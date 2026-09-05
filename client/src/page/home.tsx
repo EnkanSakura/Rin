@@ -13,6 +13,7 @@ const NAV_CARD_MAP: Record<string, { href: string; icon: string; navKey: string 
   hashtags: { href: "/hashtags", icon: "ri-hashtag", navKey: "hashtags" },
   friends: { href: "/friends", icon: "ri-user-heart-line", navKey: "friends" },
   bangumi: { href: "/bangumi", icon: "ri-film-line", navKey: "bangumi" },
+  showcase: { href: "/showcase", icon: "ri-gallery-line", navKey: "showcase" },
   tools: { href: "/tools", icon: "ri-tools-line", navKey: "tools" },
   about: { href: "/about", icon: "ri-information-line", navKey: "about" },
 };

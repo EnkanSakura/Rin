@@ -285,6 +285,64 @@ export interface MomentListResponse {
 }
 
 // ============================================================================
+// Showcase Types (展柜)
+// ============================================================================
+
+export interface ShowcaseItem {
+  id: number;
+  showcaseId: number;
+  title: string;
+  /** Ordered image URL list; the first image is the card cover */
+  images: string[];
+  desc: string;
+  sort_order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShowcaseGroup {
+  id: number;
+  name: string;
+  sort_order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShowcaseGroupWithItems extends ShowcaseGroup {
+  items: ShowcaseItem[];
+}
+
+export interface ShowcaseListResponse {
+  showcases: ShowcaseGroupWithItems[];
+}
+
+export interface CreateShowcaseRequest {
+  name: string;
+}
+
+export interface UpdateShowcaseRequest {
+  name: string;
+}
+
+export interface ShowcaseReorderRequest {
+  ids: number[];
+}
+
+export interface CreateShowcaseItemRequest {
+  title?: string;
+  images?: string[];
+  desc?: string;
+}
+
+export interface UpdateShowcaseItemRequest {
+  title?: string;
+  images?: string[];
+  desc?: string;
+  /** Move the item into another showcase group */
+  showcaseId?: number;
+}
+
+// ============================================================================
 // Config Types
 // ============================================================================
 

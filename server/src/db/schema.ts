@@ -80,6 +80,29 @@ export const friends = sqliteTable("friends", {
     ),
 }));
 
+export const showcases = sqliteTable("showcases", {
+    id: integer("id").primaryKey(),
+    name: text("name").notNull(),
+    sort_order: integer("sort_order").default(0).notNull(),
+    createdAt: created_at,
+    updatedAt: updated_at,
+}, (table) => ({
+    orderIdx: index("showcases_sort_order_idx").on(table.sort_order),
+}));
+
+export const showcaseItems = sqliteTable("showcase_items", {
+    id: integer("id").primaryKey(),
+    showcaseId: integer("showcase_id").references(() => showcases.id, { onDelete: 'cascade' }).notNull(),
+    title: text("title").default("").notNull(),
+    images: text("images").default("[]").notNull(),
+    desc: text("desc").default("").notNull(),
+    sort_order: integer("sort_order").default(0).notNull(),
+    createdAt: created_at,
+    updatedAt: updated_at,
+}, (table) => ({
+    showcaseOrderIdx: index("showcase_items_showcase_order_idx").on(table.showcaseId, table.sort_order),
+}));
+
 export const users = sqliteTable("users", {
     id: integer("id").primaryKey(),
     username: text("username").notNull(),
@@ -155,6 +178,17 @@ export const feedsRelations = relations(feeds, ({ many, one }) => ({
         references: [users.id],
     }),
     comments: many(comments),
+}));
+
+export const showcasesRelations = relations(showcases, ({ many }) => ({
+    items: many(showcaseItems),
+}));
+
+export const showcaseItemsRelations = relations(showcaseItems, ({ one }) => ({
+    showcase: one(showcases, {
+        fields: [showcaseItems.showcaseId],
+        references: [showcases.id],
+    }),
 }));
 
 export const momentsRelations = relations(moments, ({ one }) => ({

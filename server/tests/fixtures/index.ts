@@ -165,6 +165,32 @@ export function createMockDB() {
         );
 
         CREATE INDEX IF NOT EXISTS idx_verification_files_path ON verification_files(path);
+
+        -- Showcases table (album groups for the showcase page)
+        CREATE TABLE IF NOT EXISTS showcases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            sort_order INTEGER DEFAULT 0 NOT NULL,
+            created_at INTEGER DEFAULT (unixepoch()),
+            updated_at INTEGER DEFAULT (unixepoch())
+        );
+
+        CREATE INDEX IF NOT EXISTS showcases_sort_order_idx ON showcases(sort_order);
+
+        -- Showcase items table (entries inside a showcase group)
+        CREATE TABLE IF NOT EXISTS showcase_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            showcase_id INTEGER NOT NULL,
+            title TEXT DEFAULT '' NOT NULL,
+            images TEXT DEFAULT '[]' NOT NULL,
+            desc TEXT DEFAULT '' NOT NULL,
+            sort_order INTEGER DEFAULT 0 NOT NULL,
+            created_at INTEGER DEFAULT (unixepoch()),
+            updated_at INTEGER DEFAULT (unixepoch()),
+            FOREIGN KEY (showcase_id) REFERENCES showcases(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS showcase_items_showcase_order_idx ON showcase_items(showcase_id, sort_order);
     `);
 
     return { db, sqlite };

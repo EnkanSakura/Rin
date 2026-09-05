@@ -10,6 +10,7 @@ const NAV_ITEM_DEFS = [
   { id: "tools", labelKey: "tools.title" },
   { id: "friends", labelKey: "friends.title" },
   { id: "bangumi", labelKey: "bangumi.title" },
+  { id: "showcase", labelKey: "showcase.title" },
   // { id: "about", labelKey: "about.title" },
 ] as const;
 

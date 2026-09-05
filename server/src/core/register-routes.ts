@@ -7,6 +7,7 @@ import { FeedService, SearchService, WordPressService } from "../services/feed";
 import { FriendService } from "../services/friends";
 import { MomentsService } from "../services/moments";
 import { RSSService } from "../services/rss";
+import { ShowcaseService } from "../services/showcase";
 import { SitemapService } from "../services/sitemap";
 import { BlobService, StorageService } from "../services/storage";
 import { TagService } from "../services/tag";
@@ -25,6 +26,7 @@ export function registerRoutes(app: RinApp) {
   app.route("/blob", BlobService());
   app.route("/friend", FriendService());
   app.route("/moments", MomentsService());
+  app.route("/showcase", ShowcaseService());
   app.route("/user", UserService());
   app.route("/verification", VerificationFileService());
   app.route("/auth", PasswordAuthService());

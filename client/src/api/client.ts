@@ -29,6 +29,12 @@ import type {
   UpdateVerificationFileRequest,
   Moment,
   CreateMomentRequest,
+  ShowcaseListResponse,
+  CreateShowcaseRequest,
+  UpdateShowcaseRequest,
+  ShowcaseReorderRequest,
+  CreateShowcaseItemRequest,
+  UpdateShowcaseItemRequest,
   ConfigType,
   ConfigResponse,
   AIConfig,
@@ -151,6 +157,12 @@ export type {
   UpdateFriendRequest,
   Moment,
   CreateMomentRequest,
+  ShowcaseListResponse,
+  CreateShowcaseRequest,
+  UpdateShowcaseRequest,
+  ShowcaseReorderRequest,
+  CreateShowcaseItemRequest,
+  UpdateShowcaseItemRequest,
   ConfigType,
   ConfigResponse,
   AIConfig,
@@ -481,6 +493,58 @@ class MomentsAPI {
 }
 
 /**
+ * Showcase (展柜) API methods
+ */
+class ShowcaseAPI {
+  constructor(private http: HttpClient) {}
+
+  // GET /api/showcase - all groups with nested items
+  async list(): Promise<ApiResponse<ShowcaseListResponse>> {
+    return this.http.get<ShowcaseListResponse>("/api/showcase");
+  }
+
+  // POST /api/showcase/group
+  async createGroup(body: CreateShowcaseRequest): Promise<ApiResponse<{ insertedId: number }>> {
+    return this.http.post<{ insertedId: number }>("/api/showcase/group", body);
+  }
+
+  // POST /api/showcase/group/:id
+  async updateGroup(id: number, body: UpdateShowcaseRequest): Promise<ApiResponse<void>> {
+    return this.http.post<void>(`/api/showcase/group/${id}`, body);
+  }
+
+  // DELETE /api/showcase/group/:id
+  async deleteGroup(id: number): Promise<ApiResponse<void>> {
+    return this.http.delete<void>(`/api/showcase/group/${id}`);
+  }
+
+  // POST /api/showcase/group/reorder
+  async reorderGroups(body: ShowcaseReorderRequest): Promise<ApiResponse<void>> {
+    return this.http.post<void>("/api/showcase/group/reorder", body);
+  }
+
+  // POST /api/showcase/group/:id/item
+  async createItem(showcaseId: number, body: CreateShowcaseItemRequest): Promise<ApiResponse<{ insertedId: number }>> {
+    return this.http.post<{ insertedId: number }>(`/api/showcase/group/${showcaseId}/item`, body);
+  }
+
+  // POST /api/showcase/item/:id
+  async updateItem(id: number, body: UpdateShowcaseItemRequest): Promise<ApiResponse<void>> {
+    return this.http.post<void>(`/api/showcase/item/${id}`, body);
+  }
+
+  // DELETE /api/showcase/item/:id
+  async deleteItem(id: number): Promise<ApiResponse<void>> {
+    return this.http.delete<void>(`/api/showcase/item/${id}`);
+  }
+
+  // POST /api/showcase/item/reorder
+  async reorderItems(body: ShowcaseReorderRequest): Promise<ApiResponse<void>> {
+    return this.http.post<void>("/api/showcase/item/reorder", body);
+  }
+}
+
+/**
  * Config API methods
  */
 class ConfigAPI {
@@ -687,6 +751,7 @@ export class ApiClient {
   user: UserAPI;
   friend: FriendAPI;
   moments: MomentsAPI;
+  showcase: ShowcaseAPI;
   config: ConfigAPI;
   aiConfig: AIConfigAPI;
   storage: StorageAPI;
@@ -704,6 +769,7 @@ export class ApiClient {
     this.user = new UserAPI(this.http);
     this.friend = new FriendAPI(this.http);
     this.moments = new MomentsAPI(this.http);
+    this.showcase = new ShowcaseAPI(this.http);
     this.config = new ConfigAPI(this.http);
     this.aiConfig = new AIConfigAPI(this.http);
     this.storage = new StorageAPI(this.http);
