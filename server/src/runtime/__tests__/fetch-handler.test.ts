@@ -115,7 +115,7 @@ describe("handleFetch", () => {
 
     const { handleFetch } = await import("../fetch-handler");
     const response = await handleFetch(
-      new Request("http://localhost/robots.txt"),
+      new Request("http://localhost/fallthrough.txt"),
       {
         ASSETS: { fetch: assetFetch },
         DB: db,
@@ -127,6 +127,28 @@ describe("handleFetch", () => {
     expect(dbPrepare).toHaveBeenCalledTimes(1);
     expect(assetFetch).toHaveBeenCalledTimes(1);
     expect(getAppFetch).toHaveBeenCalledTimes(0);
+  });
+
+  it("routes sitemap/robots meta paths to the app before static assets", async () => {
+    getAppFetch.mockResolvedValue(new Response("app-body", { status: 200 }));
+    const assetFetch = mock(async () => new Response("asset-body", { status: 200 }));
+    const dbPrepare = mock(() => ({ bind: mock(() => ({ first: mock(async () => null) })) }));
+    const db = { prepare: dbPrepare } as unknown as D1Database;
+
+    const { handleFetch } = await import("../fetch-handler");
+    const response = await handleFetch(
+      new Request("http://localhost/robots.txt"),
+      {
+        ASSETS: { fetch: assetFetch },
+        DB: db,
+      } as unknown as Env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("app-body");
+    expect(getAppFetch).toHaveBeenCalledTimes(1);
+    expect(assetFetch).toHaveBeenCalledTimes(0);
+    expect(dbPrepare).toHaveBeenCalledTimes(0);
   });
 
   it("does not query D1 for non-verification paths", async () => {

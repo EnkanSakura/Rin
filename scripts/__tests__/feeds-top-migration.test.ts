@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Database } from "bun:sqlite";
+import { fileURLToPath } from "node:url";
 import {
   ADD_FEEDS_TOP_COLUMN_SQL,
   FEEDS_TABLE_EXISTS_QUERY,
@@ -7,7 +8,9 @@ import {
   fixTopField,
 } from "../../cli/src/lib/db-migration";
 
-const SQL_DIR = new URL("../../server/sql/", import.meta.url).pathname;
+// Use fileURLToPath so drive-letter paths are resolved correctly on Windows
+// (URL.pathname would produce a leading "/E:/..." that Bun cannot open).
+const SQL_DIR = fileURLToPath(new URL("../../server/sql/", import.meta.url));
 
 function splitStatements(sql: string): string[] {
   return sql

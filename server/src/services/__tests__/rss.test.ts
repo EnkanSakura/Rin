@@ -12,7 +12,17 @@ describe('RSSService', () => {
     let app: Hono<{ Bindings: Env; Variables: Variables }>;
 
     beforeEach(async () => {
-        const ctx = await setupTestApp(RSSService);
+        // Serve storage lookups from an in-memory R2 bucket that always reports
+        // "not found". Without this, feed generation probes the configured S3
+        // endpoint over the network and can hang long enough to time the tests
+        // out (or fail depending on network conditions).
+        const r2Bucket = {
+            head: async () => null,
+            get: async () => null,
+            put: async () => ({} as R2Object),
+            delete: async () => {},
+        } as unknown as R2Bucket;
+        const ctx = await setupTestApp(RSSService, { R2_BUCKET: r2Bucket } as Partial<Env>);
         db = ctx.db;
         sqlite = ctx.sqlite;
         env = ctx.env;
