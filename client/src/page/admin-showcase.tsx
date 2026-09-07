@@ -2,12 +2,8 @@ import {
   FlatActionButton,
   Modal,
   SearchableSelect,
-  SettingsCard,
-  SettingsCardBody,
-  SettingsCardHeader,
 } from "@rin/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import { Helmet } from "react-helmet";
 import { useTranslation } from "react-i18next";
 import ReactLoading from "react-loading";
@@ -16,6 +12,7 @@ import { Button } from "../components/button";
 import { useAlert, useConfirm } from "../components/dialog";
 import { ImageWithFallback } from "../components/image-with-fallback";
 import { Input } from "../components/input";
+import { ToolbarButton } from "../components/toolbar-button";
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { filterShowcaseItems, parseShowcaseData } from "../utils/showcase";
 import {
@@ -39,6 +36,104 @@ type ItemDraft = {
 };
 
 // ============================================================================
+// Toolbar shared by the group list and the entry list (mirrors 文章管理)
+// ============================================================================
+
+function ListToolbar({
+  keyword,
+  onKeywordChange,
+  placeholder,
+  selectedCount,
+  busy,
+  onDelete,
+  deleteTitle,
+  onCreate,
+  createTitle,
+  onBack,
+  backTitle,
+  contextLabel,
+}: {
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  placeholder: string;
+  selectedCount: number;
+  busy: boolean;
+  onDelete: () => void;
+  deleteTitle: string;
+  onCreate: () => void;
+  createTitle: string;
+  onBack?: () => void;
+  backTitle?: string;
+  contextLabel?: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="rounded-2xl border border-black/10 bg-w px-4 py-3 dark:border-white/10">
+      <div className="flex flex-wrap items-center gap-3">
+        {onBack ? (
+          <>
+            <button
+              type="button"
+              onClick={onBack}
+              title={backTitle}
+              aria-label={backTitle}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <i className="ri-arrow-left-line text-lg" aria-hidden="true" />
+            </button>
+            {contextLabel ? (
+              <span className="max-w-40 truncate text-sm font-medium t-primary">{contextLabel}</span>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* Search */}
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <i
+            className="ri-search-line pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-neutral-400"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={keyword}
+            onChange={(event) => onKeywordChange(event.target.value)}
+            placeholder={placeholder}
+            className="w-full rounded-full border border-black/10 bg-secondary/60 py-2 pl-10 pr-9 text-sm t-primary outline-none transition-colors placeholder:text-neutral-400 focus:border-theme/40 focus:ring-2 focus:ring-theme/10 dark:border-white/10 dark:bg-white/5"
+          />
+          {keyword ? (
+            <button
+              type="button"
+              onClick={() => onKeywordChange("")}
+              aria-label={t("clear")}
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200/70 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <i className="ri-close-line text-sm" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {busy ? (
+            <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />
+          ) : null}
+
+          {selectedCount > 0 ? (
+            <span className="hidden items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-500 sm:flex dark:bg-white/10 dark:text-neutral-300">
+              {t("showcase.admin.selected_count$count", { count: selectedCount })}
+            </span>
+          ) : null}
+
+          <ToolbarButton title={deleteTitle} onClick={onDelete} danger disabled={selectedCount === 0 || busy} />
+          <span className="mx-1 hidden h-5 w-px bg-black/10 sm:block dark:bg-white/10" aria-hidden="true" />
+          <Button title={createTitle} onClick={onCreate} disabled={busy} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Admin Showcase management page (展柜管理)
 // ============================================================================
 
@@ -46,12 +141,16 @@ export function AdminShowcasePage() {
   const { t } = useTranslation();
   const siteConfig = useSiteConfig();
 
-  const [activeTab, setActiveTab] = useState(0);
+  // null = showcase list; otherwise the id of the showcase whose entries are shown
+  const [viewGroupId, setViewGroupId] = useState<number | null>(null);
   const [groups, setGroups] = useState<ShowcaseGroupWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
   const [reorderSaving, setReorderSaving] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const [keyword, setKeyword] = useState("");
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
 
   const [groupModal, setGroupModal] = useState<GroupDraft | null>(null);
   const [groupSaving, setGroupSaving] = useState(false);
@@ -73,9 +172,9 @@ export function AdminShowcasePage() {
         }
         const parsed = parseShowcaseData(data);
         setGroups(parsed);
-        setActiveGroupId((current) => {
+        setViewGroupId((current) => {
           if (current !== null && parsed.some((group) => group.id === current)) return current;
-          return parsed[0]?.id ?? null;
+          return null;
         });
       })
       .finally(() => setLoading(false));
@@ -85,17 +184,57 @@ export function AdminShowcasePage() {
     load();
   }, [load]);
 
-  const activeGroup = useMemo(() => {
-    const group = groups.find((candidate) => candidate.id === activeGroupId);
-    return group ?? groups[0] ?? null;
-  }, [groups, activeGroupId]);
+  const viewGroup = useMemo(() => {
+    const group = groups.find((candidate) => candidate.id === viewGroupId);
+    return group ?? null;
+  }, [groups, viewGroupId]);
 
-  const activeItems = useMemo(
-    () => filterShowcaseItems(activeGroup?.items),
-    [activeGroup],
+  const keywordLower = keyword.trim().toLowerCase();
+
+  // Searchable rows for the current view
+  const visibleGroups = useMemo(
+    () =>
+      groups.filter((group) =>
+        keywordLower ? group.name.toLowerCase().includes(keywordLower) : true,
+      ),
+    [groups, keywordLower],
   );
 
-  // ── Group CRUD ──────────────────────────────────────────────────────────
+  const viewItems = useMemo(() => {
+    const items = viewGroup ? filterShowcaseItems(viewGroup.items) : [];
+    if (!keywordLower) return items;
+    return items.filter((item) =>
+      `${item.title} ${item.desc}`
+        .toLowerCase()
+        .includes(keywordLower),
+    );
+  }, [viewGroup, keywordLower]);
+
+  function toggleSelected(id: number) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function enterGroup(groupId: number) {
+    setViewGroupId(groupId);
+    setKeyword("");
+    setSelected(new Set());
+  }
+
+  function backToGroups() {
+    setViewGroupId(null);
+    setKeyword("");
+    setSelected(new Set());
+  }
+
+  // ── Group CRUD & ordering ───────────────────────────────────────────────
 
   function openCreateGroup() {
     setGroupModal({ id: null, name: "" });
@@ -130,46 +269,70 @@ export function AdminShowcasePage() {
       .finally(() => setGroupSaving(false));
   }
 
-  function removeGroup(group: ShowcaseGroupWithItems) {
+  function batchDeleteGroups() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const reload = () => {
+      setSelected(new Set());
+      setBusy(false);
+      load();
+    };
     showConfirm(
-      t("showcase.admin.group_delete_confirm_title"),
-      t("showcase.admin.group_delete_confirm_description", { name: group.name }),
+      t("showcase.admin.group_delete_batch_title"),
+      t("showcase.admin.group_delete_batch_description", { count: ids.length }),
       async () => {
-        const { error: deleteError } = await client.showcase.deleteGroup(group.id);
-        if (deleteError) {
-          showAlert(deleteError.value);
-          return;
+        setBusy(true);
+        let done = 0;
+        let firstError: string | null = null;
+        for (const id of ids) {
+          const { error: deleteError } = await client.showcase.deleteGroup(id);
+          if (deleteError) {
+            firstError = firstError ?? deleteError.value;
+          } else {
+            done += 1;
+          }
         }
-        showAlert(t("showcase.admin.group_delete_success"));
-        load();
+        setBusy(false);
+        if (firstError) {
+          showAlert(firstError, reload);
+        } else {
+          showAlert(t("showcase.admin.group_delete_batch_done", { count: done }), reload);
+        }
       },
     );
   }
 
-  function commitGroupOrder(ordered: ShowcaseGroupWithItems[]) {
-    const ids = ordered.map((group) => group.id);
+  function persistGroupOrder(ordered: ShowcaseGroupWithItems[]) {
     setGroups(ordered);
     setReorderSaving(true);
     client.showcase
-      .reorderGroups({ ids })
+      .reorderGroups({ ids: ordered.map((group) => group.id) })
       .then(({ error: saveError }) => {
         if (saveError) {
           showAlert(saveError.value);
           load();
-          return;
         }
-        showAlert(t("showcase.admin.reorder_success"));
       })
       .finally(() => setReorderSaving(false));
   }
 
-  // ── Item CRUD ───────────────────────────────────────────────────────────
+  function moveGroup(groupId: number, delta: -1 | 1) {
+    const index = groups.findIndex((group) => group.id === groupId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= groups.length) return;
+    const next = [...groups];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    persistGroupOrder(next);
+  }
+
+  // ── Item CRUD & ordering ────────────────────────────────────────────────
 
   function openCreateItem() {
-    if (!activeGroup) return;
+    if (!viewGroup) return;
     setItemModal({
       id: null,
-      showcaseId: activeGroup.id,
+      showcaseId: viewGroup.id,
       title: "",
       images: [],
       desc: "",
@@ -217,71 +380,76 @@ export function AdminShowcasePage() {
       .finally(() => setItemSaving(false));
   }
 
-  function removeItem(item: ShowcaseItem) {
+  function batchDeleteItems() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const reload = () => {
+      setSelected(new Set());
+      setBusy(false);
+      load();
+    };
     showConfirm(
-      t("showcase.admin.item_delete_confirm_title"),
-      t("showcase.admin.item_delete_confirm_description", {
-        title: item.title || t("showcase.untitled"),
-      }),
+      t("showcase.admin.item_delete_batch_title"),
+      t("showcase.admin.item_delete_batch_description", { count: ids.length }),
       async () => {
-        const { error: deleteError } = await client.showcase.deleteItem(item.id);
-        if (deleteError) {
-          showAlert(deleteError.value);
-          return;
+        setBusy(true);
+        let done = 0;
+        let firstError: string | null = null;
+        for (const id of ids) {
+          const { error: deleteError } = await client.showcase.deleteItem(id);
+          if (deleteError) {
+            firstError = firstError ?? deleteError.value;
+          } else {
+            done += 1;
+          }
         }
-        showAlert(t("showcase.admin.item_delete_success"));
-        load();
+        setBusy(false);
+        if (firstError) {
+          showAlert(firstError, reload);
+        } else {
+          showAlert(t("showcase.admin.item_delete_batch_done", { count: done }), reload);
+        }
       },
     );
   }
 
-  function commitItemOrder(ordered: ShowcaseItem[]) {
-    const ids = ordered.map((item) => item.id);
+  function persistItemOrder(groupId: number, orderedItems: ShowcaseItem[]) {
     setGroups((current) =>
       current.map((group) =>
-        group.id === ordered[0]?.showcaseId
-          ? { ...group, items: ordered }
-          : group,
+        group.id === groupId ? { ...group, items: orderedItems } : group,
       ),
     );
     setReorderSaving(true);
     client.showcase
-      .reorderItems({ ids })
+      .reorderItems({ ids: orderedItems.map((item) => item.id) })
       .then(({ error: saveError }) => {
         if (saveError) {
           showAlert(saveError.value);
           load();
-          return;
         }
-        showAlert(t("showcase.admin.reorder_success"));
       })
       .finally(() => setReorderSaving(false));
   }
 
-  const tabBar = (
-    <div className="mb-4 flex overflow-x-auto rounded-2xl border border-black/10 bg-w p-1 dark:border-white/10">
-      {[
-        { key: "groups", label: t("showcase.admin.tab_groups") },
-        { key: "items", label: t("showcase.admin.tab_items") },
-      ].map((tab, i) => (
-        <button
-          key={tab.key}
-          type="button"
-          onClick={() => setActiveTab(i)}
-          className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === i
-              ? "bg-neutral-100 text-black shadow-sm dark:bg-white/10 dark:text-white"
-              : "text-neutral-500 hover:text-black dark:hover:text-white"
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
+  function moveItem(groupId: number, itemId: number, delta: -1 | 1) {
+    const group = groups.find((candidate) => candidate.id === groupId);
+    const fullItems = group ? filterShowcaseItems(group.items) : [];
+    const index = fullItems.findIndex((item) => item.id === itemId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= fullItems.length) return;
+    const next = [...fullItems];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    persistItemOrder(groupId, next);
+  }
+
+  function changeKeyword(value: string) {
+    setKeyword(value);
+    setSelected(new Set());
+  }
 
   return (
-    <div className="flex w-full flex-col">
+    <div className="flex w-full flex-col gap-4">
       <Helmet>
         <title>{`${t("showcase.admin.title")} - ${siteConfig.name}`}</title>
       </Helmet>
@@ -289,45 +457,55 @@ export function AdminShowcasePage() {
       <AlertUI />
       <ConfirmUI />
 
-      {tabBar}
-
       {loading ? (
-        <div className="flex items-center gap-3 py-8 text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center justify-center gap-3 py-10 text-sm text-neutral-500 dark:text-neutral-400">
           <ReactLoading width="1.25em" height="1.25em" type="spin" color="#FC466B" />
           <span>{t("showcase.admin.loading")}</span>
         </div>
       ) : null}
 
       {error ? (
-        <SettingsCard tone="danger">
-          <SettingsCardHeader title={t("showcase.admin.load_failed")} description={error} />
-        </SettingsCard>
+        <div className="rounded-2xl border border-black/10 bg-w px-4 py-8 text-center text-sm text-red-500 dark:border-white/10">
+          {error}
+        </div>
       ) : null}
 
-      {!loading && !error && activeTab === 0 && (
+      {!loading && !error && viewGroup === null && (
         <GroupManager
-          groups={groups}
+          groups={visibleGroups}
+          hasSearch={keyword.trim().length > 0}
+          keyword={keyword}
+          onKeywordChange={changeKeyword}
+          selected={selected}
+          onToggleSelected={toggleSelected}
           reorderSaving={reorderSaving}
+          busy={busy}
           onCreate={openCreateGroup}
+          onDeleteSelected={batchDeleteGroups}
+          onEnter={(group) => enterGroup(group.id)}
           onRename={openRenameGroup}
-          onDelete={removeGroup}
-          onReorder={commitGroupOrder}
+          onMoveUp={(group) => moveGroup(group.id, -1)}
+          onMoveDown={(group) => moveGroup(group.id, 1)}
         />
       )}
 
-      {!loading && !error && activeTab === 1 && (
+      {!loading && !error && viewGroup !== null && (
         <ItemManager
-          groups={groups}
-          activeGroupId={activeGroup?.id ?? null}
-          activeGroup={activeGroup}
-          items={activeItems}
+          group={viewGroup}
+          items={viewItems}
+          hasSearch={keyword.trim().length > 0}
+          keyword={keyword}
+          onKeywordChange={changeKeyword}
+          selected={selected}
+          onToggleSelected={toggleSelected}
           reorderSaving={reorderSaving}
-          onSelectGroup={(id) => setActiveGroupId(id)}
-          onShowGroupTab={() => setActiveTab(0)}
+          busy={busy}
+          onBack={backToGroups}
           onCreate={openCreateItem}
+          onDeleteSelected={batchDeleteItems}
           onEdit={openEditItem}
-          onDelete={removeItem}
-          onReorder={commitItemOrder}
+          onMoveUp={(item) => moveItem(viewGroup.id, item.id, -1)}
+          onMoveDown={(item) => moveItem(viewGroup.id, item.id, 1)}
         />
       )}
 
@@ -388,307 +566,316 @@ export function AdminShowcasePage() {
 }
 
 // ============================================================================
-// Group manager panel (展柜管理选项卡)
+// Group list view (展柜列表)
 // ============================================================================
 
 function GroupManager({
   groups,
+  hasSearch,
+  keyword,
+  onKeywordChange,
+  selected,
+  onToggleSelected,
   reorderSaving,
+  busy,
   onCreate,
+  onDeleteSelected,
+  onEnter,
   onRename,
-  onDelete,
-  onReorder,
+  onMoveUp,
+  onMoveDown,
 }: {
   groups: ShowcaseGroupWithItems[];
+  hasSearch: boolean;
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  selected: ReadonlySet<number>;
+  onToggleSelected: (id: number) => void;
   reorderSaving: boolean;
+  busy: boolean;
   onCreate: () => void;
+  onDeleteSelected: () => void;
+  onEnter: (group: ShowcaseGroupWithItems) => void;
   onRename: (group: ShowcaseGroupWithItems) => void;
-  onDelete: (group: ShowcaseGroupWithItems) => void;
-  onReorder: (ordered: ShowcaseGroupWithItems[]) => void;
+  onMoveUp: (group: ShowcaseGroupWithItems) => void;
+  onMoveDown: (group: ShowcaseGroupWithItems) => void;
 }) {
   const { t } = useTranslation();
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <SettingsCard>
-        <SettingsCardHeader
-          title={t("showcase.admin.groups_guide_title")}
-          description={t("showcase.admin.groups_guide_description")}
-          badge={<Button onClick={onCreate} title={t("showcase.admin.group_add")} />}
-        />
-      </SettingsCard>
+      <ListToolbar
+        keyword={keyword}
+        onKeywordChange={onKeywordChange}
+        placeholder={t("showcase.admin.search_groups_placeholder")}
+        selectedCount={selected.size}
+        busy={busy}
+        onDelete={onDeleteSelected}
+        deleteTitle={t("delete.title")}
+        onCreate={onCreate}
+        createTitle={t("showcase.admin.group_add")}
+      />
 
       {groups.length === 0 ? (
-        <SettingsCard>
-          <SettingsCardHeader
-            title={t("showcase.admin.groups_empty_title")}
-            description={t("showcase.admin.groups_empty_description")}
-          />
-        </SettingsCard>
+        <div className="rounded-2xl border border-black/10 bg-w px-4 py-12 text-center dark:border-white/10">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {hasSearch ? t("showcase.admin.no_match") : t("showcase.admin.groups_empty_title")}
+          </p>
+          {!hasSearch ? (
+            <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+              {t("showcase.admin.groups_empty_description")}
+            </p>
+          ) : null}
+        </div>
       ) : (
-        <SettingsCard>
-          <SettingsCardBody>
-            <div className="space-y-1">
-              {groups.map((group, index) => (
-                <DraggableRow
-                  key={group.id}
-                  index={index}
-                  length={groups.length}
-                  onReorder={(from, to) => {
-                    const next = [...groups];
-                    const [moved] = next.splice(from, 1);
-                    next.splice(to, 0, moved);
-                    onReorder(next);
-                  }}
-                >
-                  <div className="flex min-w-0 flex-1 items-center gap-3 px-2 py-1">
-                    <i className="ri-store-2-line text-lg text-theme/70" aria-hidden="true" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium t-primary">{group.name}</p>
-                      <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-                        {t("showcase.admin.group_item_count$count", { count: filterShowcaseItems(group.items).length })}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onRename(group)}
-                      title={t("showcase.admin.group_edit")}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                    >
-                      <i className="ri-pencil-line text-sm" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(group)}
-                      title={t("delete.title")}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                    >
-                      <i className="ri-delete-bin-line text-sm" aria-hidden="true" />
-                    </button>
+        <div className="overflow-hidden rounded-2xl border border-black/10 bg-w dark:border-white/10">
+          {groups.map((group, index) => {
+            const checked = selected.has(group.id);
+            const first = index === 0;
+            const last = index === groups.length - 1;
+            return (
+              <div
+                key={group.id}
+                className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                  index > 0 ? "border-t border-black/5 dark:border-white/5" : ""
+                } hover:bg-black/[0.02] dark:hover:bg-white/[0.03]`}
+              >
+                <label className="flex shrink-0 cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggleSelected(group.id)}
+                    className="h-4 w-4 accent-theme"
+                    aria-label={group.name}
+                  />
+                </label>
+
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <i className="ri-store-2-line shrink-0 text-lg text-theme/70" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium t-primary">{group.name}</p>
+                    <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                      {t("showcase.admin.group_item_count$count", { count: filterShowcaseItems(group.items).length })}
+                    </p>
                   </div>
-                </DraggableRow>
-              ))}
-              {reorderSaving ? (
-                <p className="flex items-center gap-2 px-2 pt-1 text-xs text-neutral-400">
-                  <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />
-                  {t("showcase.admin.saving_order")}
-                </p>
-              ) : null}
-            </div>
-          </SettingsCardBody>
-        </SettingsCard>
+                </div>
+
+                {/* ↑ / ↓ ordering buttons */}
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onMoveUp(group)}
+                    disabled={first || reorderSaving || hasSearch}
+                    title={t("showcase.admin.move_up")}
+                    aria-label={t("showcase.admin.move_up")}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:opacity-30 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    <i className="ri-arrow-up-s-line text-lg" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMoveDown(group)}
+                    disabled={last || reorderSaving || hasSearch}
+                    title={t("showcase.admin.move_down")}
+                    aria-label={t("showcase.admin.move_down")}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:opacity-30 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    <i className="ri-arrow-down-s-line text-lg" aria-hidden="true" />
+                  </button>
+                </div>
+
+                {/* wrench: manage this showcase's entries */}
+                <button
+                  type="button"
+                  onClick={() => onEnter(group)}
+                  title={t("showcase.admin.enter_items")}
+                  aria-label={t("showcase.admin.enter_items")}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <i className="ri-tools-line text-sm" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onRename(group)}
+                  title={t("showcase.admin.group_edit")}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <i className="ri-pencil-line text-sm" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
+          {reorderSaving ? (
+            <p className="flex items-center gap-2 border-t border-black/5 px-4 py-2 text-xs text-neutral-400 dark:border-white/5">
+              <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />
+              {t("showcase.admin.saving_order")}
+            </p>
+          ) : null}
+        </div>
       )}
     </div>
   );
 }
 
 // ============================================================================
-// Item manager panel (条目管理选项卡)
+// Entry list view (单个展柜的条目列表)
 // ============================================================================
 
 function ItemManager({
-  groups,
-  activeGroup,
-  activeGroupId,
+  group,
   items,
+  hasSearch,
+  keyword,
+  onKeywordChange,
+  selected,
+  onToggleSelected,
   reorderSaving,
-  onSelectGroup,
-  onShowGroupTab,
+  busy,
+  onBack,
   onCreate,
+  onDeleteSelected,
   onEdit,
-  onDelete,
-  onReorder,
+  onMoveUp,
+  onMoveDown,
 }: {
-  groups: ShowcaseGroupWithItems[];
-  activeGroup: ShowcaseGroupWithItems | null;
-  activeGroupId: number | null;
+  group: ShowcaseGroupWithItems;
   items: ShowcaseItem[];
+  hasSearch: boolean;
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  selected: ReadonlySet<number>;
+  onToggleSelected: (id: number) => void;
   reorderSaving: boolean;
-  onSelectGroup: (id: number) => void;
-  onShowGroupTab: () => void;
+  busy: boolean;
+  onBack: () => void;
   onCreate: () => void;
+  onDeleteSelected: () => void;
   onEdit: (item: ShowcaseItem) => void;
-  onDelete: (item: ShowcaseItem) => void;
-  onReorder: (ordered: ShowcaseItem[]) => void;
+  onMoveUp: (item: ShowcaseItem) => void;
+  onMoveDown: (item: ShowcaseItem) => void;
 }) {
   const { t } = useTranslation();
 
-  if (groups.length === 0) {
-    return (
-      <SettingsCard>
-        <SettingsCardHeader
-          title={t("showcase.admin.items_no_groups_title")}
-          description={t("showcase.admin.items_no_groups_description")}
-          badge={<Button secondary onClick={onShowGroupTab} title={t("showcase.admin.tab_groups")} />}
-        />
-      </SettingsCard>
-    );
-  }
-
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* Showcase tabs (mirrors the public page) */}
-      <div className="flex flex-wrap gap-2">
-        {groups.map((group) => (
-          <button
-            key={group.id}
-            type="button"
-            onClick={() => onSelectGroup(group.id)}
-            className={`rounded-xl px-4 py-1.5 text-sm font-medium transition-all ${
-              group.id === activeGroupId
-                ? "bg-theme text-white"
-                : "border border-black/10 bg-w text-neutral-600 hover:border-black/20 dark:border-white/10 dark:text-neutral-300"
-            }`}
-          >
-            {group.name}
-          </button>
-        ))}
-      </div>
-
-      <SettingsCard>
-        <SettingsCardHeader
-          title={activeGroup ? t("showcase.admin.items_guide_title$name", { name: activeGroup.name }) : ""}
-          description={t("showcase.admin.items_guide_description")}
-          badge={<Button onClick={onCreate} title={t("showcase.admin.item_add")} />}
-        />
-      </SettingsCard>
+      <ListToolbar
+        keyword={keyword}
+        onKeywordChange={onKeywordChange}
+        placeholder={t("showcase.admin.search_items_placeholder")}
+        selectedCount={selected.size}
+        busy={busy}
+        onDelete={onDeleteSelected}
+        deleteTitle={t("delete.title")}
+        onCreate={onCreate}
+        createTitle={t("showcase.admin.item_add")}
+        onBack={onBack}
+        backTitle={t("showcase.admin.back_to_groups")}
+        contextLabel={group.name}
+      />
 
       {items.length === 0 ? (
-        <SettingsCard>
-          <SettingsCardHeader
-            title={t("showcase.admin.items_empty_title")}
-            description={t("showcase.admin.items_empty_description")}
-          />
-        </SettingsCard>
+        <div className="rounded-2xl border border-black/10 bg-w px-4 py-12 text-center dark:border-white/10">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {hasSearch ? t("showcase.admin.no_match") : t("showcase.admin.items_empty_title")}
+          </p>
+          {!hasSearch ? (
+            <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+              {t("showcase.admin.items_empty_description")}
+            </p>
+          ) : null}
+        </div>
       ) : (
-        <SettingsCard>
-          <SettingsCardBody>
-            <div className="space-y-1">
-              {items.map((item, index) => {
-                const images = item.images ?? [];
-                const cover = images[0] ?? "";
-                return (
-                  <DraggableRow
-                    key={item.id}
-                    index={index}
-                    length={items.length}
-                    onReorder={(from, to) => {
-                      const next = [...items];
-                      const [moved] = next.splice(from, 1);
-                      next.splice(to, 0, moved);
-                      onReorder(next);
-                    }}
+        <div className="overflow-hidden rounded-2xl border border-black/10 bg-w dark:border-white/10">
+          {items.map((item, index) => {
+            const images = item.images ?? [];
+            const cover = images[0] ?? "";
+            const checked = selected.has(item.id);
+            const first = index === 0;
+            const last = index === items.length - 1;
+            return (
+              <div
+                key={item.id}
+                className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                  index > 0 ? "border-t border-black/5 dark:border-white/5" : ""
+                } hover:bg-black/[0.02] dark:hover:bg-white/[0.03]`}
+              >
+                <label className="flex shrink-0 cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggleSelected(item.id)}
+                    className="h-4 w-4 accent-theme"
+                    aria-label={item.title || t("showcase.untitled")}
+                  />
+                </label>
+
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <ImageWithFallback
+                    src={cover}
+                    alt={item.title || t("showcase.untitled")}
+                    className="h-12 w-12 shrink-0 rounded-lg border border-black/5 dark:border-white/10"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium t-primary">
+                      {item.title || t("showcase.untitled")}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      <i className="ri-image-line text-[0.9em]" aria-hidden="true" />
+                      {t("showcase.admin.item_image_count$count", { count: images.length })}
+                      {item.desc ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate">{item.desc}</span>
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                </div>
+
+                {/* ↑ / ↓ ordering buttons */}
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onMoveUp(item)}
+                    disabled={first || reorderSaving || hasSearch}
+                    title={t("showcase.admin.move_up")}
+                    aria-label={t("showcase.admin.move_up")}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:opacity-30 dark:hover:bg-white/10 dark:hover:text-white"
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-3 px-2 py-1">
-                      <ImageWithFallback
-                        src={cover}
-                        alt={item.title || t("showcase.untitled")}
-                        className="h-12 w-12 shrink-0 rounded-lg border border-black/5 dark:border-white/10"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium t-primary">
-                          {item.title || t("showcase.untitled")}
-                        </p>
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-                          <i className="ri-image-line text-[0.9em]" aria-hidden="true" />
-                          {t("showcase.admin.item_image_count$count", { count: images.length })}
-                          {item.desc ? (
-                            <>
-                              <span aria-hidden="true">·</span>
-                              <span className="truncate">{item.desc}</span>
-                            </>
-                          ) : null}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onEdit(item)}
-                        title={t("showcase.admin.item_edit")}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                      >
-                        <i className="ri-pencil-line text-sm" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete(item)}
-                        title={t("delete.title")}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                      >
-                        <i className="ri-delete-bin-line text-sm" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </DraggableRow>
-                );
-              })}
-              {reorderSaving ? (
-                <p className="flex items-center gap-2 px-2 pt-1 text-xs text-neutral-400">
-                  <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />
-                  {t("showcase.admin.saving_order")}
-                </p>
-              ) : null}
-            </div>
-          </SettingsCardBody>
-        </SettingsCard>
+                    <i className="ri-arrow-up-s-line text-lg" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMoveDown(item)}
+                    disabled={last || reorderSaving || hasSearch}
+                    title={t("showcase.admin.move_down")}
+                    aria-label={t("showcase.admin.move_down")}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:opacity-30 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    <i className="ri-arrow-down-s-line text-lg" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onEdit(item)}
+                  title={t("showcase.admin.item_edit")}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <i className="ri-pencil-line text-sm" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
+          {reorderSaving ? (
+            <p className="flex items-center gap-2 border-t border-black/5 px-4 py-2 text-xs text-neutral-400 dark:border-white/5">
+              <ReactLoading width="1em" height="1em" type="spin" color="#FC466B" />
+              {t("showcase.admin.saving_order")}
+            </p>
+          ) : null}
+        </div>
       )}
-    </div>
-  );
-}
-
-// ============================================================================
-// HTML5 drag-and-drop row helper
-// ============================================================================
-
-function DraggableRow({
-  index,
-  length,
-  onReorder,
-  children,
-}: {
-  index: number;
-  length: number;
-  onReorder: (from: number, to: number) => void;
-  children: ReactNode;
-}) {
-  const dragIndex = useRef<number | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [over, setOver] = useState(false);
-
-  return (
-    <div
-      draggable
-      onDragStart={() => {
-        dragIndex.current = index;
-        setDragging(true);
-      }}
-      onDragOver={(event) => {
-        event.preventDefault();
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={() => {
-        if (dragIndex.current !== null && dragIndex.current !== index) {
-          onReorder(dragIndex.current, index);
-        }
-        dragIndex.current = null;
-        setDragging(false);
-        setOver(false);
-      }}
-      onDragEnd={() => {
-        dragIndex.current = null;
-        setDragging(false);
-        setOver(false);
-      }}
-      className={`flex cursor-grab items-center gap-1 rounded-xl text-sm transition-colors active:cursor-grabbing ${
-        dragging ? "opacity-60 ring-2 ring-theme/30" : ""
-      } ${over ? "bg-neutral-50 dark:bg-white/5" : ""}`}
-    >
-      <i
-        className="ri-draggable shrink-0 cursor-grab text-neutral-400 active:cursor-grabbing"
-        aria-hidden="true"
-      />
-      <div className={`flex min-w-0 flex-1 items-center gap-1 rounded-lg py-1 ${length === 1 ? "pointer-events-none" : ""}`}>
-        {children}
-      </div>
     </div>
   );
 }

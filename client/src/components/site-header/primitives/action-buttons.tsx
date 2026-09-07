@@ -204,7 +204,7 @@ export function UserAvatar({
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  setLocation("/admin/writing");
+                  setLocation("/admin/settings");
                 }}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm t-primary transition-colors hover:bg-black/5 dark:hover:bg-white/10"
               >

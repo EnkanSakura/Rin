@@ -135,6 +135,61 @@ describe('FeedService', () => {
             const data = await res.json() as any;
             expect(data.size).toBe(1);
         });
+
+        it('should allow admin to list every feed state ordered by publish time', async () => {
+            // Create one of each state: published+listed, published+unlisted, draft
+            const states = [
+                { title: 'Oldest Published', listed: true, draft: false },
+                { title: 'Hidden Published', listed: false, draft: false },
+                { title: 'Latest Draft', listed: true, draft: true },
+            ];
+            const ids: number[] = [];
+            for (const state of states) {
+                const res = await app.request('/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer mock_token_1',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: state.title,
+                        content: `Content of ${state.title}`,
+                        listed: state.listed,
+                        draft: state.draft,
+                        tags: [],
+                    }),
+                }, env);
+                expect(res.status).toBe(200);
+                const created = await res.json() as any;
+                ids.push(created.insertedId);
+            }
+
+            // Make the first article older than the others so the newest-first
+            // ordering can be asserted deterministically.
+            sqlite.prepare('UPDATE feeds SET created_at = unixepoch() - 500 WHERE id = ?').run(ids[0]);
+
+            const res = await app.request('/?type=all', {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer mock_token_1' },
+            }, env);
+
+            expect(res.status).toBe(200);
+            const data = await res.json() as any;
+            expect(data.size).toBe(3);
+            expect(data.data.map((row: any) => row.title)).toEqual([
+                'Latest Draft',
+                'Hidden Published',
+                'Oldest Published',
+            ]);
+            // Admin rows keep the draft/listed flags for status badges.
+            expect(data.data[0].draft).toBe(1);
+            expect(data.data[1].listed).toBe(0);
+        });
+
+        it('should reject non-admin access to type=all', async () => {
+            const res = await app.request('/?type=all', { method: 'GET' }, env);
+            expect(res.status).toBe(403);
+        });
     });
 
     describe('GET /:id - Get single feed', () => {

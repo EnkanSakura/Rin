@@ -81,7 +81,7 @@ export function FeedService(): Hono<{
         const limit = c.req.query('limit');
         const type = c.req.query('type');
 
-        if ((type === 'draft' || type === 'unlisted') && !admin) {
+        if ((type === 'draft' || type === 'unlisted' || type === 'all') && !admin) {
             return c.text('Permission denied', 403);
         }
 
@@ -94,11 +94,19 @@ export function FeedService(): Hono<{
             return c.json(cached);
         }
 
+        // 'all' is an admin-only management view: every article regardless of
+        // draft/listed state, ordered by publish time (newest first).
         const where = type === 'draft'
             ? eq(feeds.draft, 1)
             : type === 'unlisted'
                 ? and(eq(feeds.draft, 0), eq(feeds.listed, 0))
-                : and(eq(feeds.draft, 0), eq(feeds.listed, 1));
+                : type === 'all'
+                    ? undefined
+                    : and(eq(feeds.draft, 0), eq(feeds.listed, 1));
+
+        const orderBy = type === 'all'
+            ? [desc(feeds.createdAt), desc(feeds.id)]
+            : [desc(feeds.top), desc(feeds.createdAt), desc(feeds.updatedAt)];
 
         const size = await profileAsync(c, 'feed_list_count', () => db.select({ count: count() }).from(feeds).where(where));
 
@@ -118,7 +126,7 @@ export function FeedService(): Hono<{
                 },
                 user: { columns: { id: true, username: true, avatar: true } }
             },
-            orderBy: [desc(feeds.top), desc(feeds.createdAt), desc(feeds.updatedAt)],
+            orderBy: orderBy,
             offset: page_num * limit_num,
             limit: limit_num + 1,
         }))).map(({ content, hashtags, summary, ...other }: any) => {

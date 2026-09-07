@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useContext } from "react";
 import type { DefaultParams, PathPattern } from "wouter";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import { AdminLayout } from "../components/admin-layout";
 import Footer from "../components/footer";
 import { Header } from "../components/header";
@@ -30,9 +30,9 @@ import { SearchPage } from "../page/search";
 import { Settings } from "../page/settings";
 import { AdminShowcasePage } from "../page/admin-showcase";
 import { ShowcasePage } from "../page/showcase";
+import { ArticleAdminPage } from "../page/article-admin";
 import { TimelinePage } from "../page/timeline";
 import { ToolsPage } from "../page/tools";
-import { WritingPage } from "../page/writing";
 import { VerificationFilesPage } from "../page/verification-files";
 import { ProfileContext } from "../state/profile";
 import { tryInt } from "../utils/int";
@@ -91,8 +91,28 @@ export function AppRoutes() {
         {(params) => <SearchPage keyword={params.keyword || ""} />}
       </AppRoute>
 
+      {/* Entering the admin area lands on Settings by default */}
+      <AdminRoute path="/admin" requirePermission title={t("settings.title")} description={t("admin.settings_description")}>
+        <Redirect to="/admin/settings" replace />
+      </AdminRoute>
+
       <AdminRoute path="/admin/settings" requirePermission title={t("settings.title")} description={t("admin.settings_description")}>
         <Settings />
+      </AdminRoute>
+
+      <AdminRoute path="/admin/articles" requirePermission title={t("article_admin.title")} description={t("admin.article_admin_description")}>
+        <ArticleAdminPage />
+      </AdminRoute>
+
+      {/* Direct editor entry points (quick write from the header, per-article
+          edit links); the article management toolbar switches to the same
+          editor in-page. */}
+      <AdminRoute path="/admin/writing" requirePermission title={t("writing")} description={t("admin.writing_description")}>
+        <ArticleAdminPage initialWrite />
+      </AdminRoute>
+
+      <AdminRoute path="/admin/writing/:id" requirePermission title={t("writing")} description={t("admin.writing_description")}>
+        {({ id }) => <ArticleAdminPage initialWrite initialId={tryInt(0, id)} />}
       </AdminRoute>
 
       <AdminRoute path="/admin/health" requirePermission title={t("health.title")} description={t("admin.health_description")}>
@@ -113,14 +133,6 @@ export function AppRoutes() {
 
       <AdminRoute path="/admin/showcase" requirePermission title={t("showcase.admin.title")} description={t("admin.showcase_description")}>
         <AdminShowcasePage />
-      </AdminRoute>
-
-      <AdminRoute path="/admin/writing" requirePermission title={t("writing")} description={t("admin.writing_description")}>
-        <WritingPage />
-      </AdminRoute>
-
-      <AdminRoute path="/admin/writing/:id" requirePermission title={t("writing")} description={t("admin.writing_description")}>
-        {({ id }) => <WritingPage id={tryInt(0, id)} />}
       </AdminRoute>
 
       <AppRoute path="/callback">

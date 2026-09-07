@@ -1,9 +1,10 @@
 import i18n from 'i18next';
 import _ from 'lodash';
-import {useCallback, useEffect, useState} from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import {Helmet} from "react-helmet";
 import {useTranslation} from "react-i18next";
 import Loading from 'react-loading';
+import { useLocation } from "wouter";
 import {ShowAlertType, useAlert} from '../components/dialog';
 import {Checkbox, Input} from "../components/input";
 import { DateTimeInput, FlatMetaRow, FlatPanel } from "@rin/ui";
@@ -12,7 +13,13 @@ import {Cache} from '../utils/cache';
 import {useSiteConfig} from "../hooks/useSiteConfig";
 import {siteName} from "../utils/constants";
 import mermaid from 'mermaid';
-import { MarkdownEditor } from '../components/markdown_editor';
+
+// The Markdown editor pulls in monaco-editor, which is heavy. Load it lazily
+// so opening the writing view never blocks on editor resources — the admin
+// pages preload the chunk in the background ahead of time.
+const MarkdownEditor = lazy(() =>
+  import('../components/markdown_editor').then((module) => ({ default: module.MarkdownEditor })),
+);
 
 async function publish({
   title,
@@ -24,6 +31,7 @@ async function publish({
   draft,
   createdAt,
   onCompleted,
+  afterSave,
   showAlert
 }: {
   title: string;
@@ -35,6 +43,7 @@ async function publish({
   alias?: string;
   createdAt?: Date;
   onCompleted?: () => void;
+  afterSave?: (savedId: number) => void;
   showAlert: ShowAlertType;
 }) {
   const t = i18n.t
@@ -59,7 +68,11 @@ async function publish({
   if (data) {
     showAlert(t("publish.success"), () => {
       Cache.with().clear();
-      window.location.href = "/feed/" + data.insertedId;
+      if (afterSave) {
+        afterSave(data.insertedId);
+      } else {
+        window.location.href = "/admin/articles";
+      }
     });
   }
 }
@@ -75,6 +88,7 @@ async function update({
   draft,
   createdAt,
   onCompleted,
+  afterSave,
   showAlert
 }: {
   id: number;
@@ -87,6 +101,7 @@ async function update({
   draft?: boolean;
   createdAt?: Date;
   onCompleted?: () => void;
+  afterSave?: (savedId: number) => void;
   showAlert: ShowAlertType;
 }) {
   const t = i18n.t
@@ -111,14 +126,19 @@ async function update({
   } else {
     showAlert(t("update.success"), () => {
       Cache.with(id).clear();
-      window.location.href = "/feed/" + id;
+      if (afterSave) {
+        afterSave(id);
+      } else {
+        window.location.href = "/admin/articles";
+      }
     });
   }
 }
 
 // 写作页面
-export function WritingPage({ id }: { id?: number }) {
+export function WritingPage({ id, onSaved }: { id?: number; onSaved?: (savedId: number) => void }) {
   const { t } = useTranslation();
+  const [, setLocation] = useLocation();
   const siteConfig = useSiteConfig();
   const cache = Cache.with(id);
   const [title, setTitle] = cache.useCache("title", "");
@@ -153,6 +173,13 @@ export function WritingPage({ id }: { id?: number }) {
         onCompleted: () => {
           setPublishing(false)
         },
+        afterSave: (savedId) => {
+          if (onSaved) {
+            onSaved(savedId);
+          } else {
+            setLocation("/admin/articles");
+          }
+        },
         showAlert
       });
     } else {
@@ -176,6 +203,13 @@ export function WritingPage({ id }: { id?: number }) {
         createdAt,
         onCompleted: () => {
           setPublishing(false)
+        },
+        afterSave: (savedId) => {
+          if (onSaved) {
+            onSaved(savedId);
+          } else {
+            setLocation("/admin/articles");
+          }
         },
         showAlert
       });
@@ -292,7 +326,7 @@ export function WritingPage({ id }: { id?: number }) {
               className="cursor-pointer rounded-none border-0 bg-transparent px-0 py-2 sm:rounded-2xl sm:border sm:bg-secondary sm:px-4 sm:py-3"
               onClick={() => setDraft(!draft)}
             >
-              <p>{t('visible.self_only')}</p>
+              <p>{t('draft')}</p>
               <Checkbox
                 id="draft"
                 value={draft}
@@ -304,12 +338,12 @@ export function WritingPage({ id }: { id?: number }) {
               className="cursor-pointer rounded-none border-0 bg-transparent px-0 py-2 sm:rounded-2xl sm:border sm:bg-secondary sm:px-4 sm:py-3"
               onClick={() => setListed(!listed)}
             >
-              <p>{t('listed')}</p>
+              <p>{t('hidden')}</p>
               <Checkbox
-                id="listed"
-                value={listed}
+                id="hidden"
+                value={!listed}
                 setValue={setListed}
-                placeholder={t('listed')}
+                placeholder={t('hidden')}
               />
             </FlatMetaRow>
             <FlatMetaRow className="gap-3 rounded-none border-0 bg-transparent px-0 py-2 sm:rounded-2xl sm:border sm:bg-secondary sm:px-4 sm:py-3 xl:col-span-1">
@@ -337,7 +371,18 @@ export function WritingPage({ id }: { id?: number }) {
         {MetaInput({ className: "p-4 sm:p-5 md:p-6" })}
 
         <FlatPanel className="overflow-hidden p-0">
-          <MarkdownEditor content={content} setContent={setContent} height='680px' />
+          <Suspense
+            fallback={
+              <div
+                className="flex w-full flex-col items-center justify-center gap-3 bg-secondary/40"
+                style={{ height: "680px" }}
+              >
+                <Loading type="spin" height={24} width={24} />
+              </div>
+            }
+          >
+            <MarkdownEditor content={content} setContent={setContent} height='680px' />
+          </Suspense>
         </FlatPanel>
       </div>
       <AlertUI />

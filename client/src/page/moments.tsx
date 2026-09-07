@@ -1,5 +1,5 @@
 import { Modal } from "@rin/ui"
-import { useContext, useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react"
 import { Helmet } from 'react-helmet'
 import { client } from "../app/runtime"
 
@@ -10,9 +10,15 @@ import { ProfileContext } from "../state/profile"
 import { tryInt } from "../utils/int"
 import { useSearch } from "wouter"
 import { useAlert, useConfirm } from "../components/dialog"
-import { MarkdownEditor } from "../components/markdown_editor"
+import Loading from 'react-loading';
 import { Waiting } from "../components/loading"
 import { MomentItem } from "../components/moment_item"
+
+// The Markdown editor pulls in monaco-editor: keep it out of the initial
+// bundle and only load it when the publish dialog actually opens.
+const MarkdownEditor = lazy(() =>
+    import("../components/markdown_editor").then((module) => ({ default: module.MarkdownEditor })),
+);
 
 interface Moment {
     id: number;
@@ -239,11 +245,19 @@ export function MomentsPage() {
                     </h2>
                     
                     <div className="bg-w rounded-2xl t-primary">
-                        <MarkdownEditor 
-                            content={content}
-                            setContent={setContent}
-                            height="300px"
-                        />
+                        <Suspense
+                            fallback={
+                                <div className="flex w-full items-center justify-center bg-secondary/40" style={{ height: "300px" }}>
+                                    <Loading type="spin" height={22} width={22} />
+                                </div>
+                            }
+                        >
+                            <MarkdownEditor
+                                content={content}
+                                setContent={setContent}
+                                height="300px"
+                            />
+                        </Suspense>
                     </div>
                     
                     <div className="flex justify-end mt-4 space-x-2">
