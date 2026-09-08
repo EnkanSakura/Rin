@@ -1,5 +1,6 @@
 import type { RinApp } from "./app-types";
 import { PasswordAuthService } from "../services/auth";
+import { BangumiService } from "../services/bangumi";
 import { CommentService } from "../services/comments";
 import { ConfigService } from "../services/config";
 import { FaviconService } from "../services/favicon";
@@ -27,6 +28,7 @@ export function registerRoutes(app: RinApp) {
   app.route("/friend", FriendService());
   app.route("/moments", MomentsService());
   app.route("/showcase", ShowcaseService());
+  app.route("/bangumi", BangumiService());
   app.route("/user", UserService());
   app.route("/verification", VerificationFileService());
   app.route("/auth", PasswordAuthService());

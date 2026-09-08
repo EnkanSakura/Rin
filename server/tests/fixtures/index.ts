@@ -191,6 +191,14 @@ export function createMockDB() {
         );
 
         CREATE INDEX IF NOT EXISTS showcase_items_showcase_order_idx ON showcase_items(showcase_id, sort_order);
+
+        -- Bangumi cache table (per-user collection snapshot for "auto" update mode)
+        CREATE TABLE IF NOT EXISTS bangumi_cache (
+            user_id TEXT PRIMARY KEY NOT NULL,
+            data TEXT NOT NULL,
+            total INTEGER DEFAULT 0 NOT NULL,
+            updated_at INTEGER DEFAULT (unixepoch()) NOT NULL
+        );
     `);
 
     return { db, sqlite };

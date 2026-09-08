@@ -50,7 +50,9 @@ describe("buildWranglerTriggersConfig", () => {
 
   it("includes cron triggers for production deploys", () => {
     expect(buildWranglerTriggersConfig(false)).toContain("[triggers]");
-    expect(buildWranglerTriggersConfig(false)).toContain('crons = ["*/20 * * * *"]');
+    expect(buildWranglerTriggersConfig(false)).toContain(
+      'crons = ["*/20 * * * *", "0 3 * * *"]',
+    );
   });
 });
 

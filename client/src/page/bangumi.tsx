@@ -80,18 +80,48 @@ async function fetchAllCollections(
   return all;
 }
 
+/** Fetch the collection from the site API (used in "auto" update mode) */
+async function fetchLocalCollections(): Promise<UserSubjectCollection[]> {
+  const res = await fetch("/api/bangumi", {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Bangumi local API error: ${res.status}`);
+  }
+  const body = (await res.json()) as { data?: UserSubjectCollection[] };
+  return body.data ?? [];
+}
+
+/** Trigger a manual sync through the site API (used in "auto" update mode) */
+async function fetchBangumiUpdate(): Promise<UserSubjectCollection[]> {
+  const res = await fetch("/api/bangumi/update", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Bangumi local API error: ${res.status}`);
+  }
+  const body = (await res.json()) as { data?: UserSubjectCollection[] };
+  return body.data ?? [];
+}
+
 export function BangumiPage() {
   const { t } = useTranslation();
   const siteConfig = useSiteConfig();
   const clientConfig = useContext(ClientConfigContext);
 
-  const bangumiEnabled = clientConfig.getBoolean("bangumi.enabled");
+  // 追番默认启用（设置中已无“启用追番”开关），配置了用户 ID 即展示
   const bangumiUserId = String(clientConfig.get("bangumi.userId") ?? "");
   const bangumiApiUrl = String(clientConfig.get("bangumi.apiUrl") ?? "https://api.bgm.tv");
   const bangumiSubjectBaseUrl = String(
     clientConfig.get("bangumi.subjectBaseUrl") ?? "https://bgm.tv/subject/",
   );
   const bangumiUserAgent = String(clientConfig.get("bangumi.userAgent") ?? "Rin-Bangumi/1.0");
+  const bangumiUpdateMode = String(clientConfig.get("bangumi.updateMode") ?? "realtime");
   const rawCategoryOrder = String(clientConfig.get("bangumi.categoryOrder") ?? "[]");
   let categoryOrder: string[];
   try {
@@ -105,9 +135,30 @@ export function BangumiPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeStatus, setActiveStatus] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Manual "更新" button: pull the latest collection via the site API (auto mode)
+  async function handleManualRefresh() {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setUpdateError(null);
+    try {
+      const items = await fetchBangumiUpdate();
+      items.sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+      );
+      setCollections(items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setUpdateError(t("bangumi.refresh_failed$message", { message }));
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    if (!bangumiEnabled || !bangumiUserId) {
+    if (!bangumiUserId) {
       setLoading(false);
       return;
     }
@@ -118,8 +169,12 @@ export function BangumiPage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all collections in a single request with pagination
-        const all = await fetchAllCollections(bangumiUserId, bangumiApiUrl, bangumiUserAgent);
+        // "auto": read the daily-synced snapshot from the site API (D1);
+        // "realtime": fetch directly from the Bangumi API with pagination
+        const all =
+          bangumiUpdateMode === "auto"
+            ? await fetchLocalCollections()
+            : await fetchAllCollections(bangumiUserId, bangumiApiUrl, bangumiUserAgent);
         if (cancelled) return;
 
         // Sort by updated_at descending
@@ -144,7 +199,7 @@ export function BangumiPage() {
     return () => {
       cancelled = true;
     };
-  }, [bangumiEnabled, bangumiUserId, bangumiApiUrl, bangumiUserAgent]);
+  }, [bangumiUserId, bangumiApiUrl, bangumiUserAgent, bangumiUpdateMode]);
 
   // Compute categories that actually have data
   const availableCategories = useMemo(() => {
@@ -174,7 +229,7 @@ export function BangumiPage() {
     return score.toFixed(1);
   }
 
-  if (!bangumiEnabled || !bangumiUserId) {
+  if (!bangumiUserId) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Helmet>
@@ -191,16 +246,45 @@ export function BangumiPage() {
         <title>{`${t("bangumi.title")} - ${siteConfig.name}`}</title>
       </Helmet>
       <main className="w-full flex flex-col justify-center items-center mb-8 ani-show">
-        <div className="wauto text-start py-4 text-4xl font-bold">
-          <p className="text-black dark:text-white">
+        <div className="wauto flex flex-row items-center justify-between gap-3 py-4 text-start">
+          <p className="text-4xl font-bold text-black dark:text-white">
             {t("bangumi.title")}
           </p>
-          <div className="flex flex-row justify-between">
-          </div>
+          {bangumiUpdateMode === "auto" && (
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={refreshing || loading}
+              title={t("bangumi.refresh")}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-black/10 bg-w px-3 py-1.5 text-sm font-medium text-neutral-600 transition-all hover:border-theme/30 hover:text-theme disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-neutral-300"
+            >
+              <i
+                className={`${refreshing ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} text-base`}
+              />
+              {t("bangumi.refresh")}
+            </button>
+          )}
         </div>
+        {updateError && (
+          <div className="wauto -mt-2 mb-2 flex items-center gap-1.5 text-sm text-red-500">
+            <i className="ri-error-warning-line" />
+            {updateError}
+          </div>
+        )}
 
         {/* Category Tabs */}
         <div className="wauto mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveCategory("")}
+            className={`rounded-xl px-4 py-1.5 text-sm font-medium transition-all ${
+              activeCategory === ""
+                ? "bg-theme text-white"
+                : "border border-black/10 bg-w text-neutral-600 hover:border-black/20 dark:border-white/10 dark:text-neutral-300"
+            }`}
+          >
+            {t("bangumi.all")}
+          </button>
           {availableCategories.map((cat) => {
             const labelKey = SUBJECT_TYPE_NAMES[cat];
             if (!labelKey) return null;

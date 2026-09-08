@@ -150,6 +150,15 @@ export const feedHashtags = sqliteTable("feed_hashtags", {
     hashtagFeedIdx: index("feed_hashtags_hashtag_feed_idx").on(table.hashtagId, table.feedId),
 }));
 
+// Bangumi per-user collection snapshot, kept fresh by the daily scheduled task.
+// Only used when the "bangumi.updateMode" client config is set to "auto".
+export const bangumiCache = sqliteTable("bangumi_cache", {
+    userId: text("user_id").primaryKey(),
+    data: text("data").notNull(),
+    total: integer("total").default(0).notNull(),
+    updatedAt: updated_at,
+});
+
 export const cache = sqliteTable("cache", {
     id: integer("id").primaryKey(),
     key: text("key").notNull(),

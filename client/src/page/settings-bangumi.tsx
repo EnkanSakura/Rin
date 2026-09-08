@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ItemInput, ItemSwitch, ItemDraggableChecklist, type ChecklistOption } from "./settings-items";
+import { ItemDraggableChecklist, ItemInput, ItemSelect, type ChecklistOption } from "./settings-items";
 
 const BANGUMI_CATEGORY_DEFS = [
   { id: "anime", labelKey: "bangumi.category.anime" },
@@ -9,21 +9,23 @@ const BANGUMI_CATEGORY_DEFS = [
   { id: "reality", labelKey: "bangumi.category.reality" },
 ] as const;
 
+const BANGUMI_UPDATE_MODE_VALUES = ["realtime", "auto"] as const;
+
 export function BangumiSettings({
   userId,
   userAgent,
   apiUrl,
   subjectBaseUrl,
-  enabled,
   categoryOrder,
+  updateMode,
   onChange,
 }: {
   userId: string;
   userAgent: string;
   apiUrl: string;
   subjectBaseUrl: string;
-  enabled: boolean;
   categoryOrder: string;
+  updateMode: string;
   onChange: (key: string, value: unknown) => void;
 }) {
   const { t } = useTranslation();
@@ -33,15 +35,23 @@ export function BangumiSettings({
     label: t(item.labelKey),
   }));
 
+  const updateModeValue = BANGUMI_UPDATE_MODE_VALUES.includes(updateMode as (typeof BANGUMI_UPDATE_MODE_VALUES)[number])
+    ? updateMode
+    : "realtime";
+
   return (
     <>
-      <ItemSwitch
-        title={t("settings.bangumi.enable.title")}
-        description={t("settings.bangumi.enable.desc")}
-        checked={enabled}
-        onChange={(checked) => {
-          onChange("bangumi.enabled", checked);
+      <ItemSelect
+        title={t("settings.bangumi.update_mode.title")}
+        description={t("settings.bangumi.update_mode.desc")}
+        value={updateModeValue}
+        onChange={(value) => {
+          onChange("bangumi.updateMode", value);
         }}
+        options={BANGUMI_UPDATE_MODE_VALUES.map((value) => ({
+          value,
+          label: t(`settings.bangumi.update_mode.options.${value}`),
+        }))}
       />
       <ItemInput
         title={t("settings.bangumi.user_id.title")}

@@ -595,10 +595,6 @@
     },
     "bangumi": {
       "title": "Bangumi",
-      "enable": {
-        "title": "Enable Bangumi",
-        "desc": "Show Bangumi page in the navigation bar"
-      },
       "user_id": {
         "title": "Bangumi User ID",
         "desc": "Enter your Bangumi user ID (numeric)",
@@ -622,6 +618,14 @@
       "categories": {
         "title": "Categories",
         "desc": "Choose which Bangumi categories to display. Drag to reorder."
+      },
+      "update_mode": {
+        "title": "Update Mode",
+        "desc": "Choose how bangumi data is loaded. Real-time: fetch the latest data from the Bangumi API on every page visit. Automatic: a daily scheduled task syncs the data to this site and the page reads the local copy.",
+        "options": {
+          "realtime": "Real-time",
+          "auto": "Automatic"
+        }
       }
     },
     "image_compression": {
@@ -878,6 +882,8 @@
     "not_configured": "Bangumi is not configured. Please configure the Bangumi user ID in the admin settings.",
     "bgm_score": "BGM Score",
     "my_score": "My Score",
+    "refresh": "Refresh",
+    "refresh_failed$message": "Refresh failed: {{message}}",
     "unrated": "Unrated",
     "total_count": "{{count}} items total",
     "category": {

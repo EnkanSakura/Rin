@@ -586,10 +586,6 @@
     },
     "bangumi": {
       "title": "番組計画",
-      "enable": {
-        "title": "番組計画を有効にする",
-        "desc": "ナビゲーションバーに番組計画ページを表示"
-      },
       "user_id": {
         "title": "Bangumi ユーザー ID",
         "desc": "Bangumi ユーザーID（数字）を入力",
@@ -613,6 +609,14 @@
       "categories": {
         "title": "カテゴリ",
         "desc": "番組計画ページに表示するカテゴリを選択。ドラッグで並び替え"
+      },
+      "update_mode": {
+        "title": "データ更新方法",
+        "desc": "番組計画ページのデータ取得方法を選択します。リアルタイム：ページを開くたびに Bangumi API から最新データを取得します。自動：毎日のスケジュールタスクでデータをこのサイトに同期し、ページはローカルのデータを読み込みます。",
+        "options": {
+          "realtime": "リアルタイム",
+          "auto": "自動"
+        }
       }
     },
     "image_compression": {
@@ -869,6 +873,8 @@
     "not_configured": "番組計画が設定されていません。管理画面で Bangumi ユーザーID を設定してください。",
     "bgm_score": "Bangumi スコア",
     "my_score": "マイスコア",
+    "refresh": "更新",
+    "refresh_failed$message": "更新に失敗しました: {{message}}",
     "unrated": "未評価",
     "total_count": "全 {{count}} 件",
     "category": {

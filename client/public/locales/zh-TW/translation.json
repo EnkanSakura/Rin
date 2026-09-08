@@ -595,10 +595,6 @@
     },
     "bangumi": {
       "title": "追番",
-      "enable": {
-        "title": "啟用追番",
-        "desc": "在導航欄顯示追番頁面"
-      },
       "user_id": {
         "title": "Bangumi 用戶 ID",
         "desc": "輸入你的 Bangumi 用戶 ID（數字）",
@@ -622,6 +618,14 @@
       "categories": {
         "title": "條目分類",
         "desc": "選擇 Bangumi 頁面中展示的條目分類，拖曳可調整順序"
+      },
+      "update_mode": {
+        "title": "資料更新方式",
+        "desc": "選擇追番頁面資料的載入方式。即時：每次瀏覽追番頁面時直接從 Bangumi API 取得最新資料；自動：由每日定時任務自動同步資料到本站，頁面改為讀取本地資料。",
+        "options": {
+          "realtime": "即時",
+          "auto": "自動"
+        }
       }
     },
     "image_compression": {
@@ -878,6 +882,8 @@
     "not_configured": "Bangumi尚未配置，請在後台設定中配置 Bangumi 用戶 ID",
     "bgm_score": "Bangumi 評分",
     "my_score": "我的評分",
+    "refresh": "更新",
+    "refresh_failed$message": "更新失敗: {{message}}",
     "unrated": "未評分",
     "total_count": "共 {{count}} 個條目",
     "category": {

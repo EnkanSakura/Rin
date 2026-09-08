@@ -678,8 +678,8 @@ export function Settings() {
             userAgent={String(clientConfig.get("bangumi.userAgent") ?? "Rin-Bangumi/1.0")}
             apiUrl={String(clientConfig.get("bangumi.apiUrl") ?? "https://api.bgm.tv")}
             subjectBaseUrl={String(clientConfig.get("bangumi.subjectBaseUrl") ?? "https://bgm.tv/subject/")}
-            enabled={Boolean(clientConfig.getBoolean("bangumi.enabled"))}
             categoryOrder={String(clientConfig.get("bangumi.categoryOrder") ?? "[]")}
+            updateMode={String(clientConfig.get("bangumi.updateMode") ?? "realtime")}
             onChange={(key, value) => setConfigValue("client", key, value)}
           />
           </>

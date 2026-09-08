@@ -48,7 +48,7 @@ run_worker_first = true
 not_found_handling = "single-page-application"
 
 [triggers]
-crons = ["*/20 * * * *"]
+crons = ["*/20 * * * *", "0 3 * * *"]
 
 [vars]
 S3_FOLDER = "${env.S3_FOLDER || "images/"}"

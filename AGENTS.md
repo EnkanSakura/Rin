@@ -294,3 +294,21 @@ ln -s ../../cli/templates/git-commit-msg.sh .git/hooks/commit-msg
 - **Package Manager**: Bun
 - **Build**: Turbo for monorepo orchestration
 - **Testing**: Vitest (client), Bun native test runner (server)
+
+## Local Development Network
+
+During local debugging, requests to hosts outside mainland China (e.g.
+`api.bgm.tv`, external AI endpoints, GitHub) must go through the local proxy
+`http://127.0.0.1:7890` — direct egress to those hosts is unavailable.
+
+- Node/Bun processes (commands, scripts, ad-hoc checks): export
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY=http://127.0.0.1:7890` (Bun's `fetch`
+  honors these), or use `curl -x http://127.0.0.1:7890`.
+- Requests made *inside* the locally running Worker (`wrangler dev` /
+  workerd, e.g. the bangumi sync or friend health checks) open direct sockets
+  and **cannot** use an HTTP proxy. Validate those flows with unit tests
+  (mocked fetch) or by running the same fetch code under Bun with the proxy
+  env set — never expect a live upstream call to succeed from `wrangler dev`
+  in this environment.
+- Deployment/production never uses this proxy: the Worker runs on the
+  Cloudflare edge where outbound calls are direct.

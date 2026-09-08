@@ -97,7 +97,7 @@ export function buildWranglerTriggersConfig(preview = false) {
     ? ""
     : stripIndent(`
         [triggers]
-        crons = ["*/20 * * * *"]
+        crons = ["*/20 * * * *", "0 3 * * *"]
       `);
 }
 
