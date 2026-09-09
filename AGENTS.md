@@ -305,10 +305,15 @@ During local debugging, requests to hosts outside mainland China (e.g.
   `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY=http://127.0.0.1:7890` (Bun's `fetch`
   honors these), or use `curl -x http://127.0.0.1:7890`.
 - Requests made *inside* the locally running Worker (`wrangler dev` /
-  workerd, e.g. the bangumi sync or friend health checks) open direct sockets
-  and **cannot** use an HTTP proxy. Validate those flows with unit tests
-  (mocked fetch) or by running the same fetch code under Bun with the proxy
-  env set — never expect a live upstream call to succeed from `wrangler dev`
-  in this environment.
+  workerd) open direct sockets and **cannot** use an HTTP proxy
+  (cloudflare/workers-sdk#6443). `bun dev` therefore starts a loopback relay
+  (`cli/src/lib/dev-proxy.ts`, port = Vite port + 2) whenever `.env.local` (or
+  the shell) sets `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY`, and exports
+  `DEV_FETCH_RELAY` into `.dev.vars`. Server code that needs external hosts
+  must use `createOutboundFetch(c.env)` (`server/src/utils/outbound.ts`)
+  instead of the global `fetch`; otherwise it bypasses the relay and the
+  upstream call fails. Services that still use plain `fetch` (bangumi, friends,
+  AI endpoints, ...) must be validated with unit tests (mocked fetch) or by
+  running the same fetch code under Bun with the proxy env set.
 - Deployment/production never uses this proxy: the Worker runs on the
   Cloudflare edge where outbound calls are direct.

@@ -14,7 +14,7 @@ Rin is a blog based on Cloudflare Pages + Workers + D1 + R2. It does not require
 5. Support dragging/pasting uploaded images to a bucket that supports the S3 protocol and generating links
 6. Support setting article aliases, and access articles through links such as https://xeu.life/about
 7. Support articles not being listed in the homepage list
-8. Support adding links of friends' blog, and the backend regularly checks and updates the accessible status of links every 20 minutes
+8. Support adding links of friends' blog, and the backend regularly checks and updates the accessible status of links every hour
 9. Support replying to comment articles/deleting comments
 10. Support sending comment notifications through Webhook
 11. Support automatic identification of the first picture in the article and display it as the header image in the article list

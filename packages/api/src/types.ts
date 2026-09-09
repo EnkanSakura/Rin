@@ -450,6 +450,95 @@ export interface WordPressImportResponse {
 }
 
 // ============================================================================
+// Tools Types (X media downloader / comic downloader)
+// ============================================================================
+
+/** Kind of media attached to an X (Twitter) post. */
+export type XMediaKind = 'video' | 'gif' | 'photo';
+
+/** One downloadable variant of a media item (different bitrate / resolution). */
+export interface XMediaVariant {
+  url: string;
+  container: string;
+  bitrate?: number;
+  label?: string;
+}
+
+export interface XMediaItem {
+  id: string;
+  kind: XMediaKind;
+  /** Direct CDN url of the downloadable file (mp4 for video/gif, image for photo). */
+  url: string;
+  thumbnailUrl?: string;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  /** Best-effort human readable label, e.g. "720x720 · 60s". */
+  label?: string;
+  variants: XMediaVariant[];
+}
+
+export interface XTweetMediaResponse {
+  tweetId: string;
+  url: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar?: string;
+  text: string;
+  createdAt?: string;
+  /** Which upstream resolver produced the payload. */
+  source: string;
+  media: XMediaItem[];
+}
+
+/** One entry of the comic platform selector (only `enabled` ones can be used). */
+export interface ComicPlatform {
+  id: string;
+  name: string;
+  enabled: boolean;
+  homepage: string;
+  note?: string;
+}
+
+export interface ComicPlatformListResponse {
+  platforms: ComicPlatform[];
+}
+
+export interface ComicChapter {
+  id: string;
+  title: string;
+  /** Currently readable for free (無料 / campaign / trial). */
+  free: boolean;
+  /** The chapter the user submitted. */
+  current: boolean;
+}
+
+export interface ComicResolveResponse {
+  platform: string;
+  episodeId: string;
+  episodeTitle: string;
+  seriesId?: string;
+  seriesTitle?: string;
+  chapters: ComicChapter[];
+}
+
+export interface ComicPage {
+  url: string;
+  /** Block order for the 4x4 image scramble, or null when the page is not scrambled. */
+  scramble: number[] | null;
+  sort: number;
+  width?: number;
+  height?: number;
+}
+
+export interface ComicPagesResponse {
+  platform: string;
+  episodeId: string;
+  episodeTitle: string;
+  pages: ComicPage[];
+}
+
+// ============================================================================
 // API Endpoint Paths
 // ============================================================================
 
@@ -522,6 +611,14 @@ export const API_PATHS = {
 
   // RSS
   RSS_GET: (name: string) => `/${encodeURIComponent(name)}`,
+
+  // Tools
+  TOOLS_X_MEDIA: '/api/tools/x/media',
+  TOOLS_X_PROXY: '/api/tools/x/proxy',
+  TOOLS_COMIC_PLATFORMS: '/api/tools/comics/platforms',
+  TOOLS_COMIC_RESOLVE: (platform: string) => `/api/tools/comics/${platform}/resolve`,
+  TOOLS_COMIC_PAGES: (platform: string) => `/api/tools/comics/${platform}/pages`,
+  TOOLS_COMIC_IMAGE: (platform: string) => `/api/tools/comics/${platform}/image`,
 } as const;
 
 export type APIEndpoint = typeof API_PATHS;

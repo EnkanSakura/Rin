@@ -10,8 +10,8 @@ const DEFAULT_USER_AGENT = "Rin-Bangumi/1.0";
 const PAGE_SIZE = 100;
 /**
  * Snapshot freshness window used by the scheduled task. The cron trigger fires
- * every 20 minutes (plus a dedicated daily trigger); syncing only when the
- * snapshot is older than 23 hours keeps the refresh rate at ~once per day.
+ * hourly (plus a dedicated daily trigger); syncing only when the snapshot is
+ * older than 23 hours keeps the refresh rate at ~once per day.
  */
 const SNAPSHOT_MAX_AGE_SECONDS = 23 * 60 * 60;
 /**

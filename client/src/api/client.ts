@@ -42,6 +42,10 @@ import type {
   AuthStatus,
   LoginRequest,
   LoginResponse,
+  XTweetMediaResponse,
+  ComicPlatformListResponse,
+  ComicResolveResponse,
+  ComicPagesResponse,
 } from "@rin/api";
 
 export interface SettingsConfigResponse {
@@ -170,6 +174,10 @@ export type {
   AuthStatus,
   LoginRequest,
   LoginResponse,
+  XTweetMediaResponse,
+  ComicPlatformListResponse,
+  ComicResolveResponse,
+  ComicPagesResponse,
 } from "@rin/api";
 
 
@@ -715,6 +723,46 @@ class WordPressAPI {
 }
 
 /**
+ * Tools API methods (X media downloader, comic downloader)
+ */
+class ToolsAPI {
+  constructor(
+    private http: HttpClient,
+    private baseUrl: string,
+  ) {}
+
+  // GET /api/tools/x/media
+  async xMedia(url: string): Promise<ApiResponse<XTweetMediaResponse>> {
+    return this.http.get<XTweetMediaResponse>(`/api/tools/x/media?url=${encodeURIComponent(url)}`);
+  }
+
+  /** Same-origin url that streams a twimg file through the worker. */
+  xProxyUrl(mediaUrl: string, fileName: string): string {
+    return `${this.baseUrl}/api/tools/x/proxy?url=${encodeURIComponent(mediaUrl)}&name=${encodeURIComponent(fileName)}`;
+  }
+
+  // GET /api/tools/comics/platforms
+  async comicPlatforms(): Promise<ApiResponse<ComicPlatformListResponse>> {
+    return this.http.get<ComicPlatformListResponse>("/api/tools/comics/platforms");
+  }
+
+  // POST /api/tools/comics/:platform/resolve
+  async comicResolve(platform: string, url: string): Promise<ApiResponse<ComicResolveResponse>> {
+    return this.http.post<ComicResolveResponse>(`/api/tools/comics/${platform}/resolve`, { url });
+  }
+
+  // POST /api/tools/comics/:platform/pages
+  async comicPages(platform: string, episodeUrl: string): Promise<ApiResponse<ComicPagesResponse>> {
+    return this.http.post<ComicPagesResponse>(`/api/tools/comics/${platform}/pages`, { episodeUrl });
+  }
+
+  /** Same-origin url that streams one (still scrambled) comic page image. */
+  comicImageUrl(platform: string, imageUrl: string, episodeUrl: string, fileName: string): string {
+    return `${this.baseUrl}/api/tools/comics/${platform}/image?url=${encodeURIComponent(imageUrl)}&referer=${encodeURIComponent(episodeUrl)}&name=${encodeURIComponent(fileName)}`;
+  }
+}
+
+/**
  * RSS API methods - direct fetch for RSS feeds
  */
 class RSSAPI {
@@ -760,6 +808,7 @@ export class ApiClient {
   verificationFiles: VerificationFilesAPI;
   wp: WordPressAPI;
   rss: RSSAPI;
+  tools: ToolsAPI;
 
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
@@ -778,6 +827,7 @@ export class ApiClient {
     this.verificationFiles = new VerificationFilesAPI(this.http);
     this.wp = new WordPressAPI(this.http);
     this.rss = new RSSAPI(baseUrl);
+    this.tools = new ToolsAPI(this.http, baseUrl);
   }
 }
 

@@ -17,6 +17,25 @@ export function getMigrationFileVersion(fileName: string) {
   return Number.parseInt(match[1] || "", 10);
 }
 
+/**
+ * Wrangler may print notices before the JSON payload (e.g. "Proxy environment
+ * variables detected..."), so parse the first JSON value instead of the whole
+ * stdout.
+ */
+function parseWranglerJson(stdout: string) {
+  const trimmed = stdout.trim();
+  const start = trimmed.search(/[[{]/);
+  if (start === -1) {
+    throw new Error(`wrangler produced no JSON output: ${trimmed.slice(0, 200)}`);
+  }
+  const opener = trimmed[start];
+  const end = trimmed.lastIndexOf(opener === "[" ? "]" : "}");
+  if (end <= start) {
+    throw new Error(`wrangler produced malformed JSON output: ${trimmed.slice(0, 200)}`);
+  }
+  return JSON.parse(trimmed.slice(start, end + 1));
+}
+
 async function runWranglerJson(args: string[]) {
   const proc = Bun.spawn([bunExec, "x", "wrangler", ...args], {
     cwd: wranglerCwd,
@@ -34,7 +53,7 @@ async function runWranglerJson(args: string[]) {
     throw new Error(stderr.trim() || stdout.trim() || `wrangler failed with exit code ${exitCode}`);
   }
 
-  return JSON.parse(stdout);
+  return parseWranglerJson(stdout);
 }
 
 async function runWranglerQuiet(args: string[]) {

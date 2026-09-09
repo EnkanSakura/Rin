@@ -12,6 +12,7 @@ import { ShowcaseService } from "../services/showcase";
 import { SitemapService } from "../services/sitemap";
 import { BlobService, StorageService } from "../services/storage";
 import { TagService } from "../services/tag";
+import { ToolsService } from "../services/tools";
 import { UserService } from "../services/user";
 import { VerificationFileService } from "../services/verification-files";
 
@@ -33,6 +34,7 @@ export function registerRoutes(app: RinApp) {
   app.route("/verification", VerificationFileService());
   app.route("/auth", PasswordAuthService());
   app.route("/config", ConfigService());
+  app.route("/tools", ToolsService());
   app.route("/", RSSService());
   app.route("/", SitemapService());
   app.route("/favicon", FaviconService());

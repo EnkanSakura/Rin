@@ -26,7 +26,7 @@ features:
     details: End-to-end type safety with shared @rin/api types
     icon: 🛡️
   - title: Health check
-    details: Check your friends link every 20 minutes
+    details: Check your friends link every hour
     icon: 🧐
   - title: Hashtags
     details: Free to use hashtags in your article

@@ -2,7 +2,12 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseEnv } from "../lib/env";
 
-export async function runSetupDev() {
+export interface SetupDevOptions {
+  /** Loopback relay the locally running Worker should use for outbound fetches. */
+  devFetchRelay?: string;
+}
+
+export async function runSetupDev(options: SetupDevOptions = {}) {
   const rootDir = process.cwd();
   const envFile = path.join(rootDir, ".env.local");
 
@@ -48,7 +53,7 @@ run_worker_first = true
 not_found_handling = "single-page-application"
 
 [triggers]
-crons = ["*/20 * * * *", "0 3 * * *"]
+crons = ["0 * * * *", "0 3 * * *"]
 
 [vars]
 S3_FOLDER = "${env.S3_FOLDER || "images/"}"
@@ -109,13 +114,15 @@ RIN_GITHUB_CLIENT_SECRET=${env.RIN_GITHUB_CLIENT_SECRET}
 JWT_SECRET=${env.JWT_SECRET}
 ${env.R2_BUCKET_NAME ? "" : `S3_ACCESS_KEY_ID=${env.S3_ACCESS_KEY_ID}
 S3_SECRET_ACCESS_KEY=${env.S3_SECRET_ACCESS_KEY}
-`}
-`,
+`}${options.devFetchRelay ? `DEV_FETCH_RELAY=${options.devFetchRelay}\n` : ""}`,
   );
 
   console.log("✅ 已生成 wrangler.toml");
   console.log("✅ 已生成 client/.env");
   console.log("✅ 已生成 .dev.vars");
+  if (options.devFetchRelay) {
+    console.log(`✅ 已配置出站代理中继 ${options.devFetchRelay}`);
+  }
   console.log("\n🎉 配置加载完成！");
   console.log("   现在可以运行：bun run dev\n");
 }

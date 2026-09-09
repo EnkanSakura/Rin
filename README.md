@@ -28,7 +28,7 @@ https://xeu.life
 - **Image Management**: Drag-and-drop or paste images to upload directly to S3-compatible storage (e.g., Cloudflare R2), with automatic link generation.
 - **Custom Slugs**: Assign friendly URLs like `https://yourblog.com/about` using custom article aliases.
 - **Unlisted Posts**: Option to keep articles out of the public homepage listing.
-- **Blogroll**: Add links to friends' blogs. The backend automatically checks link availability every 20 minutes.
+- **Blogroll**: Add links to friends' blogs. The backend automatically checks link availability every hour.
 - **Comment System**: Reply to comments or moderate them with delete functionality.
 - **Webhook Notifications**: Receive real-time alerts for new comments via configurable webhooks.
 - **Featured Images**: Automatically detect the first image in an article and use it as the cover image in listings.

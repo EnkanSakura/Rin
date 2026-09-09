@@ -33,6 +33,9 @@ import { ShowcasePage } from "../page/showcase";
 import { ArticleAdminPage } from "../page/article-admin";
 import { TimelinePage } from "../page/timeline";
 import { ToolsPage } from "../page/tools";
+import { ComicDownloaderPage } from "../page/tools/comic-downloader";
+import { LcCalculatorPage } from "../page/tools/lc-calculator";
+import { XDownloaderPage } from "../page/tools/x-downloader";
 import { VerificationFilesPage } from "../page/verification-files";
 import { ProfileContext } from "../state/profile";
 import { tryInt } from "../utils/int";
@@ -77,6 +80,18 @@ export function AppRoutes() {
 
       <AppRoute path="/tools">
         <ToolsPage />
+      </AppRoute>
+
+      <AppRoute path="/tools/x-downloader">
+        <XDownloaderPage />
+      </AppRoute>
+
+      <AppRoute path="/tools/lc-calculator">
+        <LcCalculatorPage />
+      </AppRoute>
+
+      <AppRoute path="/tools/comic-downloader">
+        <ComicDownloaderPage />
       </AppRoute>
 
       <AppRoute path="/hashtags">
