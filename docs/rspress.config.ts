@@ -1,7 +1,13 @@
 import * as path from 'path';
 import { defineConfig } from '@rspress/core';
 
+// GitHub Pages serves project sites from /<repository>/, so the docs workflow
+// passes the base path reported by actions/configure-pages through DOCS_BASE.
+// Locally (and for root deployments) it stays "/".
+const base = process.env.DOCS_BASE ? `${process.env.DOCS_BASE.replace(/\/+$/, '')}/` : '/';
+
 export default defineConfig({
+  base,
   root: path.join(__dirname, 'docs'),
   lang: 'zh',
   title: 'Rin',

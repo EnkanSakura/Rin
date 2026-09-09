@@ -22,42 +22,79 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.pages.outputs.available }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Not needed if lastUpdated is not enabled
 
+      # GitHub Pages must already be enabled for the repository
+      # (Settings → Pages → Source: GitHub Actions) before anything can be
+      # published to it. Forks and fresh repositories usually have it disabled,
+      # and `configure-pages` then fails the whole run with
+      # "Get Pages site failed ... Not Found". `enablement: true` cannot be used
+      # as a workaround because it requires a token other than GITHUB_TOKEN, so
+      # the deployment is skipped with a notice instead of failing the run.
+      - name: Check GitHub Pages availability
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pages")
+          if [ "$status" = "200" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=GitHub Pages unavailable::GitHub Pages is not enabled for ${GITHUB_REPOSITORY} (HTTP ${status}). Enable it in Settings → Pages → Source: GitHub Actions to publish the docs here; the official docs live at https://docs.openrin.org. Skipping this deployment."
+          fi
+
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v1
+        if: steps.pages.outputs.available == 'true'
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.13
-        
+
       - name: Setup Pages
-        uses: actions/configure-pages@v5
-        
+        if: steps.pages.outputs.available == 'true'
+        id: configure_pages
+        uses: actions/configure-pages@v6
+
       - name: Install dependencies
+        if: steps.pages.outputs.available == 'true'
         working-directory: ./docs
         run: bun install
-        
+
       - name: Build with Rspress
+        if: steps.pages.outputs.available == 'true'
         working-directory: ./docs
+        env:
+          # Project pages are served from /<repository>/, so the build has to
+          # know the base path reported by actions/configure-pages.
+          DOCS_BASE: ${{ steps.configure_pages.outputs.base_path }}
         run: bun run build
-        
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.available == 'true'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/doc_build
 
   # Deployment job
   deploy:
+    needs: build
+    if: needs.build.outputs.pages == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
     runs-on: ubuntu-latest
     name: Deploy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
