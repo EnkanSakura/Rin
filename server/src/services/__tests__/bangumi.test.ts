@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import type { UserSubjectCollection } from "@rin/api";
 import { eq } from "drizzle-orm";
 import { cleanupTestDB, setupTestApp, type TestContext } from "../../../tests/fixtures";
-import { BangumiService, bangumiCrontab } from "../bangumi";
+import { BangumiService, bangumiCrontab, fetchAllBangumiCollections } from "../bangumi";
 import { bangumiCache } from "../../db/schema";
 
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -91,6 +91,37 @@ async function readSnapshot(ctx: TestContext, userId: string) {
 
 function asBody(res: Response) {
     return res.json() as Promise<any>;
+}
+
+/** Runs `fn` against an app whose env carries the local dev relay address. */
+async function withRelayApp<T>(fn: (relayCtx: TestContext) => Promise<T>): Promise<T> {
+    const relayCtx = await setupTestApp(BangumiService, {
+        DEV_FETCH_RELAY: "http://127.0.0.1:11500",
+    });
+    try {
+        return await fn(relayCtx);
+    } finally {
+        cleanupTestDB(relayCtx.sqlite);
+    }
+}
+
+/** Records relay calls and answers them with a paginated collection payload. */
+function mockRelayFetch(items: UserSubjectCollection[]) {
+    const calls: { url: string; target: string | null }[] = [];
+    globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : (input as Request).url;
+        const headers = new Headers(init?.headers ?? (input as Request).headers);
+        const target = headers.get("x-rin-target");
+        calls.push({ url, target });
+        const targetUrl = new URL(target ?? url);
+        const offset = Number(targetUrl.searchParams.get("offset") ?? "0");
+        const limit = Number(targetUrl.searchParams.get("limit") ?? "100");
+        return new Response(
+            JSON.stringify({ data: items.slice(offset, offset + limit), total: items.length, limit, offset }),
+            { status: 200, headers: { "content-type": "application/json" } },
+        );
+    }) as typeof fetch;
+    return calls;
 }
 
 afterEach(() => {
@@ -357,5 +388,170 @@ describe("bangumiCrontab", () => {
         await bangumiCrontab(ctx.db, ctx.clientConfig);
         const afterFailure = await readSnapshot(ctx, "123456");
         expect(afterFailure.total).toBe(200);
+    });
+});
+
+describe("GET /api/bangumi/cover", () => {
+    let ctx: TestContext;
+
+    beforeEach(async () => {
+        ctx = await setupTestApp(BangumiService);
+    });
+
+    afterEach(() => {
+        cleanupTestDB(ctx.sqlite);
+    });
+
+    it("rejects sources that are not Bangumi hosts", async () => {
+        mockBangumiApi([]);
+        for (const src of [
+            "http://127.0.0.1:11498/api/config",
+            "https://example.com/cover.jpg",
+            "file:///etc/passwd",
+            "not-a-url",
+        ]) {
+            const res = await ctx.app.request(`/cover?src=${encodeURIComponent(src)}`);
+            expect(res.status).toBe(400);
+        }
+        expect(fetchCalls).toHaveLength(0);
+    });
+
+    it("rejects a missing source", async () => {
+        const res = await ctx.app.request("/cover");
+        expect(res.status).toBe(400);
+    });
+
+    it("proxies a Bangumi cover with long-lived cache headers", async () => {
+        fetchCalls = [];
+        globalThis.fetch = (async (input: unknown) => {
+            fetchCalls.push(String(input));
+            return new Response(new Uint8Array([1, 2, 3, 4]), {
+                status: 200,
+                headers: { "content-type": "image/jpeg" },
+            });
+        }) as typeof fetch;
+
+        const src = "https://lain.bgm.tv/pic/cover/l/ab/cd/123.jpg";
+        const res = await ctx.app.request(`/cover?src=${encodeURIComponent(src)}`);
+
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toBe("image/jpeg");
+        expect(res.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+        expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3, 4]));
+        expect(fetchCalls).toEqual([src]);
+    });
+
+    it("reports an upstream failure as 502", async () => {
+        mockBangumiApiFailure();
+        const src = "https://lain.bgm.tv/pic/cover/l/ab/cd/404.jpg";
+        const res = await ctx.app.request(`/cover?src=${encodeURIComponent(src)}`);
+        expect(res.status).toBe(502);
+    });
+
+    it("rejects an upstream error document served with a 200", async () => {
+        globalThis.fetch = (async () =>
+            new Response("<html>nope</html>", {
+                status: 200,
+                headers: { "content-type": "text/html" },
+            })) as typeof fetch;
+
+        const src = "https://lain.bgm.tv/pic/cover/l/ab/cd/blocked.jpg";
+        const res = await ctx.app.request(`/cover?src=${encodeURIComponent(src)}`);
+        expect(res.status).toBe(502);
+    });
+});
+
+describe("Bangumi collection fetch", () => {
+    let ctx: TestContext;
+
+    beforeEach(async () => {
+        ctx = await setupTestApp(BangumiService);
+    });
+
+    afterEach(() => {
+        cleanupTestDB(ctx.sqlite);
+    });
+
+    it("uses the injected fetch implementation and paginates", async () => {
+        const items = makeItems(205);
+        const seen: string[] = [];
+        const impl = (async (input: unknown) => {
+            const url = new URL(String(input));
+            seen.push(url.toString());
+            const offset = Number(url.searchParams.get("offset") ?? "0");
+            const limit = Number(url.searchParams.get("limit") ?? "100");
+            return new Response(
+                JSON.stringify({ data: items.slice(offset, offset + limit), total: items.length, limit, offset }),
+                { status: 200, headers: { "content-type": "application/json" } },
+            );
+        }) as typeof fetch;
+
+        const all = await fetchAllBangumiCollections("42", "https://api.bgm.tv", "ua", 100, impl);
+
+        expect(all).toHaveLength(205);
+        expect(seen).toHaveLength(3);
+        expect(seen[0]).toContain("/v0/users/42/collections");
+        expect(seen[2]).toContain("offset=200");
+    });
+
+    it("uses the injected fetch implementation for the scheduled sync", async () => {
+        const items = makeItems(2);
+        const seen: string[] = [];
+        const impl = (async (input: unknown) => {
+            seen.push(String(input));
+            return new Response(
+                JSON.stringify({ data: items, total: items.length, limit: 100, offset: 0 }),
+                { status: 200, headers: { "content-type": "application/json" } },
+            );
+        }) as typeof fetch;
+
+        await configureBangumi(ctx, { "bangumi.updateMode": "auto" });
+        await bangumiCrontab(ctx.db, ctx.clientConfig, impl);
+
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toContain("/v0/users/123456/collections");
+        expect((await readSnapshot(ctx, "123456")).total).toBe(2);
+    });
+
+    it("routes the live fetch through DEV_FETCH_RELAY when the dev relay is configured", async () => {
+        // Only meaningful in local dev: `.dev.vars` sets DEV_FETCH_RELAY and the
+        // Worker must send its upstream calls to that loopback relay instead of
+        // opening a direct socket (workerd ignores HTTP(S)_PROXY).
+        await withRelayApp(async (relayCtx) => {
+            const items = makeItems(3);
+            const calls = mockRelayFetch(items);
+
+            await configureBangumi(relayCtx, { "bangumi.updateMode": "realtime" });
+            const res = await relayCtx.app.request("/");
+
+            expect(res.status).toBe(200);
+            expect(await asBody(res)).toMatchObject({ mode: "realtime", total: 3 });
+            expect(calls).toHaveLength(1);
+            expect(calls[0]!.url).toBe("http://127.0.0.1:11500/__dev_fetch");
+            expect(calls[0]!.target).toContain("https://api.bgm.tv/v0/users/123456/collections");
+        });
+    });
+
+    it("routes the cover fetch through DEV_FETCH_RELAY when the dev relay is configured", async () => {
+        await withRelayApp(async (relayCtx) => {
+            const calls: { url: string; target: string | null }[] = [];
+            globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+                const url = typeof input === "string" ? input : (input as Request).url;
+                const headers = new Headers(init?.headers ?? (input as Request).headers);
+                calls.push({ url, target: headers.get("x-rin-target") });
+                return new Response(new Uint8Array([1, 2, 3]), {
+                    status: 200,
+                    headers: { "content-type": "image/jpeg" },
+                });
+            }) as typeof fetch;
+
+            const src = "https://lain.bgm.tv/pic/cover/l/ab/cd/123.jpg";
+            const res = await relayCtx.app.request(`/cover?src=${encodeURIComponent(src)}`);
+
+            expect(res.status).toBe(200);
+            expect(calls).toHaveLength(1);
+            expect(calls[0]!.url).toBe("http://127.0.0.1:11500/__dev_fetch");
+            expect(calls[0]!.target).toBe(src);
+        });
     });
 });

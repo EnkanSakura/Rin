@@ -4,10 +4,27 @@ import { Hono } from "hono";
 import type { AppContext, CacheImpl, DB } from "../core/hono-types";
 import { profileAsync } from "../core/server-timing";
 import { bangumiCache } from "../db/schema";
+import { createOutboundFetch } from "../utils/outbound";
 
 const DEFAULT_API_URL = "https://api.bgm.tv";
 const DEFAULT_USER_AGENT = "Rin-Bangumi/1.0";
 const PAGE_SIZE = 100;
+/**
+ * Cover images are proxied through the Worker (see GET /bangumi/cover) so the
+ * browser never has to reach `*.bgm.tv` itself; only those hosts may be fetched
+ * to keep the endpoint from becoming an open proxy.
+ */
+const COVER_HOST_SUFFIXES = ["bgm.tv", "bangumi.tv"];
+const COVER_USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+/** Cover files are small; anything beyond this is treated as a bad upstream. */
+const MAX_COVER_BYTES = 8 * 1024 * 1024;
+/**
+ * Bangumi cover URLs are content-addressed (`.../pic/cover/l/ab/cd/<id>.jpg`),
+ * so a changed cover gets a new URL. Both the browser and the edge cache can
+ * therefore keep a cover for a year (1 year is also Cloudflare's cache ceiling).
+ */
+const COVER_CACHE_SECONDS = 365 * 24 * 60 * 60;
 /**
  * Snapshot freshness window used by the scheduled task. The cron trigger fires
  * hourly (plus a dedicated daily trigger); syncing only when the snapshot is
@@ -55,9 +72,10 @@ export async function fetchBangumiCollectionPage(
     userAgent: string,
     limit = PAGE_SIZE,
     offset = 0,
+    fetchImpl: typeof fetch = fetch,
 ): Promise<UserSubjectCollectionResponse> {
     const url = `${apiUrl}/v0/users/${encodeURIComponent(userId)}/collections?limit=${limit}&offset=${offset}`;
-    const res = await fetch(url, {
+    const res = await fetchImpl(url, {
         headers: {
             Accept: "application/json",
             "User-Agent": userAgent,
@@ -75,13 +93,21 @@ export async function fetchAllBangumiCollections(
     apiUrl: string,
     userAgent: string,
     maxLimit = PAGE_SIZE,
+    fetchImpl: typeof fetch = fetch,
 ): Promise<UserSubjectCollection[]> {
     const all: UserSubjectCollection[] = [];
     let offset = 0;
     let total = 0;
 
     do {
-        const res = await fetchBangumiCollectionPage(userId, apiUrl, userAgent, maxLimit, offset);
+        const res = await fetchBangumiCollectionPage(
+            userId,
+            apiUrl,
+            userAgent,
+            maxLimit,
+            offset,
+            fetchImpl,
+        );
         all.push(...res.data);
         total = res.total;
         offset += maxLimit;
@@ -148,6 +174,69 @@ async function resolveBangumiSettings(clientConfig: CacheImpl): Promise<BangumiS
 }
 
 // ============================================================================
+// Cover proxy
+// ============================================================================
+
+function isAllowedCoverHost(hostname: string): boolean {
+    const host = hostname.toLowerCase();
+    return COVER_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+}
+
+/**
+ * Validate a Bangumi cover URL coming from the client. Only http(s) URLs on
+ * Bangumi hosts are accepted; everything else (including internal addresses)
+ * is rejected so the cover route cannot be used as an open proxy.
+ */
+export function normalizeCoverUrl(raw: string | null | undefined): string | null {
+    const value = (raw ?? "").trim();
+    if (!value) {
+        return null;
+    }
+    let url: URL;
+    try {
+        url = new URL(value);
+    } catch {
+        return null;
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+        return null;
+    }
+    if (!isAllowedCoverHost(url.hostname)) {
+        return null;
+    }
+    return url.toString();
+}
+
+/** The slice of the Cloudflare Cache API this route needs. */
+interface EdgeCache {
+    match(request: Request): Promise<Response | undefined>;
+    put(request: Request, response: Response): Promise<void>;
+}
+
+/**
+ * Cloudflare edge cache, or null when the runtime has no Cache API (tests,
+ * Bun). Read through `globalThis` so the route stays independent of which
+ * `caches` declaration the active tsconfig picks up.
+ */
+function edgeCache(): EdgeCache | null {
+    const globalCaches = (globalThis as { caches?: { default?: EdgeCache } }).caches;
+    return globalCaches?.default ?? null;
+}
+
+/** Run a cache write without blocking the response when waitUntil is available. */
+function runInBackground(c: AppContext, task: Promise<unknown>): void {
+    const guarded = task.catch((error) => {
+        console.error(`[Bangumi] background task failed: ${String(error)}`);
+    });
+    try {
+        c.executionCtx.waitUntil(guarded);
+    } catch {
+        // No execution context (tests): the cache is disabled there anyway.
+        void guarded;
+    }
+}
+
+// ============================================================================
 // Route: GET /api/bangumi
 // ============================================================================
 
@@ -182,7 +271,13 @@ export function BangumiService(): Hono {
 
             try {
                 const items = await profileAsync(c, "bangumi_live_fetch", () =>
-                    fetchAllBangumiCollections(settings.userId, settings.apiUrl, settings.userAgent),
+                    fetchAllBangumiCollections(
+                        settings.userId,
+                        settings.apiUrl,
+                        settings.userAgent,
+                        PAGE_SIZE,
+                        createOutboundFetch(c.get("env")),
+                    ),
                 );
                 await profileAsync(c, "bangumi_snapshot_store", () =>
                     storeBangumiSnapshot(db, settings.userId, items),
@@ -206,7 +301,13 @@ export function BangumiService(): Hono {
         // the same behavior available through the site API.
         try {
             const items = await profileAsync(c, "bangumi_live_fetch", () =>
-                fetchAllBangumiCollections(settings.userId, settings.apiUrl, settings.userAgent),
+                fetchAllBangumiCollections(
+                    settings.userId,
+                    settings.apiUrl,
+                    settings.userAgent,
+                    PAGE_SIZE,
+                    createOutboundFetch(c.get("env")),
+                ),
             );
             const body: BangumiPublicResponse = {
                 mode: "realtime",
@@ -215,6 +316,76 @@ export function BangumiService(): Hono {
                 updatedAt: null,
             };
             return c.json(body);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            c.status(502);
+            return c.text(message);
+        }
+    });
+
+    // GET /bangumi/cover?src=<bangumi image url>
+    // Serves a Bangumi cover through the Worker so the browser only talks to
+    // this site. The response is stored in the Cloudflare edge cache, so a
+    // visitor whose network cannot reach bgm.tv still gets the artwork.
+    app.get("/cover", async (c: AppContext) => {
+        const target = normalizeCoverUrl(c.req.query("src"));
+        if (!target) {
+            c.status(400);
+            return c.text("invalid cover url");
+        }
+
+        const cache = edgeCache();
+        const cacheKey = new Request(c.req.url, { method: "GET" });
+        if (cache) {
+            const hit = await cache.match(cacheKey);
+            if (hit) {
+                return hit;
+            }
+        }
+
+        try {
+            const upstream = await createOutboundFetch(c.get("env"))(target, {
+                headers: {
+                    "user-agent": COVER_USER_AGENT,
+                    accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+                    referer: "https://bgm.tv/",
+                },
+            });
+            if (!upstream.ok) {
+                c.status(502);
+                return c.text(`cover upstream ${upstream.status}`);
+            }
+
+            const length = Number(upstream.headers.get("content-length") ?? 0);
+            if (Number.isFinite(length) && length > MAX_COVER_BYTES) {
+                c.status(413);
+                return c.text("cover is too large");
+            }
+
+            // Reject error documents served with a 200 so the client can fall
+            // back to its placeholder instead of rendering a broken image.
+            const contentType = upstream.headers.get("content-type") ?? "";
+            if (contentType && !/^(image\/|application\/octet-stream)/i.test(contentType)) {
+                c.status(502);
+                return c.text(`cover upstream content-type ${contentType}`);
+            }
+
+            const body = await upstream.arrayBuffer();
+            if (body.byteLength > MAX_COVER_BYTES) {
+                c.status(413);
+                return c.text("cover is too large");
+            }
+
+            const headers = new Headers({
+                "content-type": contentType || "image/jpeg",
+                "cache-control": `public, max-age=${COVER_CACHE_SECONDS}, immutable`,
+                "access-control-allow-origin": "*",
+            });
+            const response = new Response(body, { status: 200, headers });
+            if (cache) {
+                runInBackground(c, cache.put(cacheKey, response.clone()));
+            }
+            return response;
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             c.status(502);
@@ -261,7 +432,13 @@ export function BangumiService(): Hono {
 
         try {
             const items = await profileAsync(c, "bangumi_live_fetch", () =>
-                fetchAllBangumiCollections(settings.userId, settings.apiUrl, settings.userAgent),
+                fetchAllBangumiCollections(
+                    settings.userId,
+                    settings.apiUrl,
+                    settings.userAgent,
+                    PAGE_SIZE,
+                    createOutboundFetch(c.get("env")),
+                ),
             );
             await profileAsync(c, "bangumi_snapshot_store", () =>
                 storeBangumiSnapshot(db, settings.userId, items),
@@ -288,7 +465,11 @@ export function BangumiService(): Hono {
 // Scheduled task: daily snapshot sync (only meaningful in "auto" mode)
 // ============================================================================
 
-export async function bangumiCrontab(db: DB, clientConfig: CacheImpl) {
+export async function bangumiCrontab(
+    db: DB,
+    clientConfig: CacheImpl,
+    fetchImpl: typeof fetch = fetch,
+) {
     const settings = await resolveBangumiSettings(clientConfig);
 
     if (settings.updateMode !== "auto") {
@@ -315,6 +496,8 @@ export async function bangumiCrontab(db: DB, clientConfig: CacheImpl) {
             settings.userId,
             settings.apiUrl,
             settings.userAgent,
+            PAGE_SIZE,
+            fetchImpl,
         );
         await storeBangumiSnapshot(db, settings.userId, items);
         console.info(`[Bangumi] synced ${items.length} collections for user ${settings.userId}`);

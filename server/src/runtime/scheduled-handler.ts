@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/d1";
 import { CacheImpl } from "../utils/cache";
 import { KVConfigImpl } from "../utils/kv-config";
+import { createOutboundFetch } from "../utils/outbound";
 
 export async function handleScheduled(
   _controller: ScheduledController | null,
@@ -22,5 +23,5 @@ export async function handleScheduled(
   await friendCrontab(env, ctx, db, cache, serverConfig, clientConfig);
   await rssCrontab(env, db);
   await sitemapCrontab(env, db);
-  await bangumiCrontab(db, clientConfig);
+  await bangumiCrontab(db, clientConfig, createOutboundFetch(env));
 }

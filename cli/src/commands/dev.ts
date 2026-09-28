@@ -33,10 +33,24 @@ function createWranglerArgs(port: number) {
   return [bunExec, "x", "wrangler", "dev", "--port", String(port), "--test-scheduled"];
 }
 
-function createViteEnv(serverPort?: number) {
+/**
+ * Vite dependency cache directory for a dev entry point.
+ *
+ * The cache stays inside the project (Vite's own default lives in
+ * `node_modules/.vite` for the same reason): the checkout owner can always
+ * write there, while a literal POSIX `/tmp/...` path is not portable to
+ * Windows at all — it means `<current drive>:\tmp\`. The directory is
+ * gitignored.
+ */
+export function createViteCacheDir(serverPort?: number, projectDir = process.cwd()) {
+  return path.join(projectDir, ".vite", serverPort ? `rin-${serverPort}` : "rin-client");
+}
+
+export function createViteEnv(serverPort?: number) {
   return {
     ...process.env,
-    RIN_VITE_CACHE_DIR: `/tmp/rin-vite-cache-${serverPort ?? "client"}`,
+    // An explicitly configured cache dir wins, so the location stays tunable.
+    RIN_VITE_CACHE_DIR: process.env.RIN_VITE_CACHE_DIR || createViteCacheDir(serverPort),
     ...(serverPort ? { RIN_SERVER_PORT: String(serverPort) } : {}),
   };
 }

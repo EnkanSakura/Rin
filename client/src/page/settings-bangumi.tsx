@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { BANGUMI_COLUMN_OPTIONS, resolveBangumiColumns } from "../utils/bangumi";
 import { ItemDraggableChecklist, ItemInput, ItemSelect, type ChecklistOption } from "./settings-items";
 
 const BANGUMI_CATEGORY_DEFS = [
@@ -18,6 +19,7 @@ export function BangumiSettings({
   subjectBaseUrl,
   categoryOrder,
   updateMode,
+  columns,
   onChange,
 }: {
   userId: string;
@@ -26,6 +28,7 @@ export function BangumiSettings({
   subjectBaseUrl: string;
   categoryOrder: string;
   updateMode: string;
+  columns: string;
   onChange: (key: string, value: unknown) => void;
 }) {
   const { t } = useTranslation();
@@ -38,6 +41,8 @@ export function BangumiSettings({
   const updateModeValue = BANGUMI_UPDATE_MODE_VALUES.includes(updateMode as (typeof BANGUMI_UPDATE_MODE_VALUES)[number])
     ? updateMode
     : "realtime";
+
+  const columnValue = String(resolveBangumiColumns(columns));
 
   return (
     <>
@@ -92,6 +97,18 @@ export function BangumiSettings({
         onChange={(value) => {
           onChange("bangumi.subjectBaseUrl", value);
         }}
+      />
+      <ItemSelect
+        title={t("settings.bangumi.columns.title")}
+        description={t("settings.bangumi.columns.desc")}
+        value={columnValue}
+        onChange={(value) => {
+          onChange("bangumi.columns", Number(value));
+        }}
+        options={BANGUMI_COLUMN_OPTIONS.map((num) => ({
+          value: String(num),
+          label: t("settings.bangumi.columns.option$num", { num }),
+        }))}
       />
       <ItemDraggableChecklist
         title={t("settings.bangumi.categories.title")}

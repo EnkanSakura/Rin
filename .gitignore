@@ -3,11 +3,11 @@ dist/**
 .next/**
 .turbo
 *.db
-.env
+.env*
+!.env.example
 .secrets
 test.ts
 *.log
-.env.production
 .wrangler
 wrangler.toml
 .vite

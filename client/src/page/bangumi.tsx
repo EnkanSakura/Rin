@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import ReactLoading from "react-loading";
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { ClientConfigContext } from "../state/config";
+import { bangumiCoverSource, bangumiCoverSrc, bangumiGridClass } from "../utils/bangumi";
+import { useImageLoadState } from "../utils/use-image-load-state";
 
 import type { UserSubjectCollection, UserSubjectCollectionResponse } from "@rin/api";
 
@@ -109,6 +111,54 @@ async function fetchBangumiUpdate(): Promise<UserSubjectCollection[]> {
   return body.data ?? [];
 }
 
+function subjectTitle(item: UserSubjectCollection): string {
+  return item.subject.name_cn || item.subject.name;
+}
+
+/** Deterministic gradient so an offline placeholder still looks like artwork. */
+function placeholderGradient(seed: number): string {
+  const hue = Math.abs(Math.round(seed) * 47) % 360;
+  return `linear-gradient(150deg, hsl(${hue} 42% 34%), hsl(${(hue + 46) % 360} 38% 17%))`;
+}
+
+/**
+ * Cover artwork served through the site API. When the proxy has nothing to
+ * return (no network to Bangumi at all) a generated placeholder with the
+ * subject title is shown instead, so the grid never collapses.
+ */
+function BangumiCover({ item }: { item: UserSubjectCollection }) {
+  const title = subjectTitle(item);
+  const src = bangumiCoverSrc(bangumiCoverSource(item.subject.images));
+  const { failed, imageRef, loaded, onError, onLoad } = useImageLoadState(src);
+
+  if (!src || failed) {
+    return (
+      <div
+        role="img"
+        aria-label={title}
+        className="flex h-full w-full items-center justify-center p-2.5 text-center"
+        style={{ backgroundImage: placeholderGradient(item.subject_id) }}
+      >
+        <span className="line-clamp-5 text-xs font-medium leading-snug text-white/85">{title}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      ref={imageRef}
+      src={src}
+      alt={title}
+      loading="lazy"
+      onLoad={onLoad}
+      onError={onError}
+      className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+        loaded ? "opacity-100" : "opacity-0"
+      }`}
+    />
+  );
+}
+
 export function BangumiPage() {
   const { t } = useTranslation();
   const siteConfig = useSiteConfig();
@@ -123,6 +173,7 @@ export function BangumiPage() {
   const bangumiUserAgent = String(clientConfig.get("bangumi.userAgent") ?? "Rin-Bangumi/1.0");
   const bangumiUpdateMode = String(clientConfig.get("bangumi.updateMode") ?? "realtime");
   const rawCategoryOrder = String(clientConfig.get("bangumi.categoryOrder") ?? "[]");
+  const bangumiColumns = clientConfig.get("bangumi.columns");
   let categoryOrder: string[];
   try {
     categoryOrder = JSON.parse(rawCategoryOrder);
@@ -352,29 +403,18 @@ export function BangumiPage() {
             {filtered.length === 0 ? (
               <p className="py-20 text-center text-neutral-500">{t("bangumi.empty")}</p>
             ) : (
-              <div className="wauto grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className={`wauto grid gap-3 ${bangumiGridClass(bangumiColumns)}`}>
                 {filtered.map((item) => (
                   <a
                     key={`${item.subject_id}-${item.type}`}
                     href={`${bangumiSubjectBaseUrl}${item.subject_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col overflow-hidden rounded-xl border border-black/10 bg-w transition-all hover:border-theme/30 hover:shadow-md dark:border-white/10"
+                    className="group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-w transition-all hover:border-theme/30 hover:shadow-md dark:border-white/10"
                   >
                     {/* Cover Image with Overlays */}
                     <div className="relative aspect-[2/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                      {item.subject.images?.medium ? (
-                        <img
-                          src={item.subject.images.medium}
-                          alt={item.subject.name_cn || item.subject.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-neutral-400">
-                          <i className="ri-image-line ri-2x" />
-                        </div>
-                      )}
+                      <BangumiCover item={item} />
 
                       {/* Bangumi Score — top left */}
                       {item.subject.score > 0 && (
@@ -388,24 +428,18 @@ export function BangumiPage() {
                         {t(COLLECTION_TYPE_NAMES[item.type])}
                       </div>
 
-                      {/* Bottom content — rating + comment in same container */}
-                      <div className="absolute bottom-0 left-0 right-0 flex flex-col bg-gradient-to-t from-black/60 to-transparent pt-6 pointer-events-none">
-                        {/* My Score */}
+                      {/* Bottom overlays: my score badge, then the comment hint bar */}
+                      <div className="absolute inset-x-0 bottom-0 flex flex-col items-end gap-1">
                         {item.rate > 0 && (
-                          <div className="pointer-events-auto self-end mx-2 mb-0.5 rounded-md bg-black/60 px-2 py-0.5 text-xs font-semibold text-rose-400 backdrop-blur-sm">
+                          <div className="mr-1.5 rounded-md bg-black/60 px-2 py-0.5 text-xs font-semibold text-rose-400 backdrop-blur-sm">
                             {t("bangumi.my_score")}: {item.rate}
                           </div>
                         )}
 
-                        {/* Comment wrapper */}
                         {item.comment && (
-                          <div className="pointer-events-auto relative">
-                            {/* Background layer */}
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                            {/* Text */}
-                            <p className="relative px-2 py-1 text-xs leading-snug text-white/90 line-clamp-3">
-                              {item.comment}
-                            </p>
+                          <div className="flex w-full items-center justify-center gap-1 bg-black/60 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm">
+                            <i className="ri-chat-3-line" aria-hidden="true" />
+                            {t("bangumi.view_comment")}
                           </div>
                         )}
                       </div>
@@ -414,9 +448,21 @@ export function BangumiPage() {
                     {/* Info — title only */}
                     <div className="flex flex-col px-2.5 pb-2.5 pt-2">
                       <h3 className="line-clamp-2 text-xs font-medium leading-snug t-primary group-hover:text-theme transition-colors">
-                        {item.subject.name_cn || item.subject.name}
+                        {subjectTitle(item)}
                       </h3>
                     </div>
+
+                    {/* Comment — revealed on hover, covering the whole card */}
+                    {item.comment && (
+                      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-1.5 overflow-y-auto bg-black/85 p-3 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:opacity-100">
+                        <p className="shrink-0 text-xs font-semibold leading-snug text-white">
+                          {subjectTitle(item)}
+                        </p>
+                        <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-white/85">
+                          {item.comment}
+                        </p>
+                      </div>
+                    )}
                   </a>
                 ))}
               </div>

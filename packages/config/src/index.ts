@@ -27,6 +27,7 @@ export const CLIENT_CONFIG_DEFAULTS = new Map(
     "bangumi.subjectBaseUrl": "https://bgm.tv/subject/",
     "bangumi.categoryOrder": "[\"anime\",\"book\",\"music\",\"game\"]",
     "bangumi.updateMode": "realtime",
+    "bangumi.columns": 4,
   }),
 );
 

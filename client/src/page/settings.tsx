@@ -680,6 +680,7 @@ export function Settings() {
             subjectBaseUrl={String(clientConfig.get("bangumi.subjectBaseUrl") ?? "https://bgm.tv/subject/")}
             categoryOrder={String(clientConfig.get("bangumi.categoryOrder") ?? "[]")}
             updateMode={String(clientConfig.get("bangumi.updateMode") ?? "realtime")}
+            columns={String(clientConfig.get("bangumi.columns") ?? "4")}
             onChange={(key, value) => setConfigValue("client", key, value)}
           />
           </>
