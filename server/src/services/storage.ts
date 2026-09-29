@@ -1,7 +1,12 @@
 import { Hono } from "hono";
 import type { AppContext } from "../core/hono-types";
 import { profileAsync } from "../core/server-timing";
-import { getStorageObject, putStorageObject } from "../utils/storage";
+import {
+    DEFAULT_STORAGE_LIST_LIMIT,
+    getStorageObject,
+    listStorageImages,
+    putStorageObject,
+} from "../utils/storage";
 
 function buf2hex(buffer: ArrayBuffer) {
     return [...new Uint8Array(buffer)]
@@ -115,6 +120,30 @@ export function StorageService(): Hono {
             console.error(e.message);
             const status = e.message?.includes('is not defined') ? 500 : 400;
             return c.text(e.message, status);
+        }
+    });
+
+    // GET /storage/images?cursor=&limit=
+    // Lists stored images (newest first) for the editor image picker.
+    app.get('/images', async (c: AppContext) => {
+        const uid = c.get('uid');
+        if (!uid) {
+            return c.text('Unauthorized', 401);
+        }
+
+        const requestedLimit = Number.parseInt(c.req.query('limit') ?? '', 10);
+        try {
+            const page = await profileAsync(c, 'storage_list', () =>
+                listStorageImages(c.get('env'), {
+                    cursor: c.req.query('cursor') || undefined,
+                    limit: Number.isFinite(requestedLimit) ? requestedLimit : DEFAULT_STORAGE_LIST_LIMIT,
+                    baseUrl: new URL(c.req.url).origin,
+                }),
+            );
+            return c.json({ success: true, ...page });
+        } catch (e: any) {
+            console.error('storage list failed:', e?.message ?? e);
+            return c.text(e?.message ?? 'Failed to list images', 500);
         }
     });
 

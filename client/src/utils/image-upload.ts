@@ -97,6 +97,102 @@ export function buildMarkdownImage(fileName: string, url: string, metadata: Imag
   return `![${safeAlt}](${attachImageMetadataToUrl(safeUrl, metadata)})\n`;
 }
 
+// ============================================================================
+// Image picker helpers (insert dialog: thumbnail + percentage resizing)
+// ============================================================================
+
+/** Width used for the picker thumbnails served by Cloudflare Image Resizing. */
+export const STORAGE_THUMBNAIL_WIDTH = 240;
+
+export const DEFAULT_IMAGE_RESIZE_PERCENT = 100;
+
+/** Quick presets offered next to the percentage input. */
+export const IMAGE_RESIZE_PRESETS = [25, 50, 75, 100] as const;
+
+/** Keep the percentage inside a sane range. */
+export function clampImageResizePercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_IMAGE_RESIZE_PERCENT;
+  }
+  return Math.min(400, Math.max(1, Math.round(value)));
+}
+
+/**
+ * Thumbnail URL for the picker.
+ *
+ * Uses Cloudflare Image Resizing (`/cdn-cgi/image/...`), which needs the zone
+ * feature to be enabled and the image to be reachable by Cloudflare; when it is
+ * not available the request fails and the caller falls back to the original
+ * image. Returns `src` untouched when no origin is available to build an
+ * absolute URL from.
+ */
+export function buildThumbnailUrl(
+  url: string,
+  width = STORAGE_THUMBNAIL_WIDTH,
+  origin = typeof window === "undefined" ? "" : window.location.origin,
+) {
+  const src = stripImageUrlMetadata(url);
+  if (!src) {
+    return src;
+  }
+
+  let absolute = src;
+  if (!/^https?:\/\//i.test(src)) {
+    if (!origin) {
+      return src;
+    }
+    absolute = `${origin}${src.startsWith("/") ? "" : "/"}${src}`;
+  }
+
+  return `/cdn-cgi/image/width=${width},fit=scale-down,quality=75/${absolute}`;
+}
+
+/**
+ * Rewrite the `#width`/`#height` metadata of an image URL so the rendered image
+ * is scaled by `percent` while keeping its aspect ratio.
+ *
+ * `base` supplies the dimensions when the URL carries none (images picked from
+ * the storage list are measured in the browser), so a picked image always ends
+ * up with explicit size metadata. Returns the URL unchanged when no size is
+ * known at all.
+ */
+export function scaleImageUrl(url: string, percent: number, base: ImageMetadata = {}) {
+  const { src, blurhash, width, height } = parseImageUrlMetadata(url);
+  const resolvedWidth = width ?? base.width;
+  const resolvedHeight = height ?? base.height;
+  if (!src || (!resolvedWidth && !resolvedHeight)) {
+    return url;
+  }
+
+  const factor = clampImageResizePercent(percent) / 100;
+  return attachImageMetadataToUrl(src, {
+    blurhash: blurhash ?? base.blurhash,
+    width: resolvedWidth ? Math.max(1, Math.round(resolvedWidth * factor)) : undefined,
+    height: resolvedHeight ? Math.max(1, Math.round(resolvedHeight * factor)) : undefined,
+  });
+}
+
+/** Human readable file size for the picker info row. */
+export function formatImageSize(bytes?: number) {
+  if (!bytes || !Number.isFinite(bytes) || bytes <= 0) {
+    return "—";
+  }
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${unit === 0 || value >= 10 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
+}
+
+/** Alt/label text for a stored object (`images/ab12.webp` → `ab12.webp`). */
+export function imageNameFromKey(key: string) {
+  const segment = key.split("/").filter(Boolean).pop() ?? key;
+  return segment;
+}
+
 async function loadImage(file: File) {
   const objectUrl = URL.createObjectURL(file);
 
@@ -122,6 +218,39 @@ async function loadImageFromUrl(url: string) {
     element.src = url;
   });
   return image;
+}
+
+async function loadImageWithoutCors(url: string) {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    element.src = url;
+  });
+  return image;
+}
+
+/**
+ * Size metadata for an image that is already stored, used by the picker's
+ * "existing images" tab. Blurhash needs a CORS-clean canvas, so it is only
+ * attached when available; plain dimensions are measured either way.
+ */
+export async function measureImageMetadata(url: string): Promise<ImageMetadata> {
+  try {
+    return await generateImageMetadataFromUrl(url);
+  } catch {
+    // Fall through to a CORS-free dimension probe.
+  }
+
+  try {
+    const image = await loadImageWithoutCors(stripImageUrlMetadata(url));
+    return {
+      width: image.naturalWidth || undefined,
+      height: image.naturalHeight || undefined,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export async function generateImageMetadata(file: File) {

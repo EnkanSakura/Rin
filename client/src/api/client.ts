@@ -46,6 +46,7 @@ import type {
   ComicPlatformListResponse,
   ComicResolveResponse,
   ComicPagesResponse,
+  StorageImageListResponse,
 } from "@rin/api";
 
 export interface SettingsConfigResponse {
@@ -178,6 +179,7 @@ export type {
   ComicPlatformListResponse,
   ComicResolveResponse,
   ComicPagesResponse,
+  StorageImageListResponse,
 } from "@rin/api";
 
 
@@ -673,6 +675,20 @@ class StorageAPI {
     if (key) formData.append("key", key);
     
     return this.http.post<UploadResponse>("/api/storage", formData);
+  }
+
+  // GET /api/storage/images
+  async listImages(
+    params: { cursor?: string; limit?: number } = {},
+  ): Promise<ApiResponse<StorageImageListResponse>> {
+    const query = new URLSearchParams();
+    if (params.cursor) query.set("cursor", params.cursor);
+    if (params.limit) query.set("limit", String(params.limit));
+    const search = query.toString();
+
+    return this.http.get<StorageImageListResponse>(
+      `/api/storage/images${search ? `?${search}` : ""}`,
+    );
   }
 }
 

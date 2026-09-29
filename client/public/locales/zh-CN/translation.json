@@ -677,7 +677,25 @@
       "drop_now": "松开以上传图片",
       "invalid_type": "请上传图片文件",
       "preview_alt": "图片预览",
-      "url_placeholder": "填写图片 URL，或上传一张图片"
+      "url_placeholder": "填写图片 URL，或上传一张图片",
+      "dialog": {
+        "title": "插入图片",
+        "tab_new": "新增",
+        "tab_existing": "已有",
+        "new_hint": "从本地选择图片上传",
+        "existing_empty": "还没有已上传的图片",
+        "existing_total$count": "共 {{count}} 张图片",
+        "existing_load_more": "加载更多",
+        "field_name": "文件名",
+        "field_size": "大小",
+        "field_original": "原始尺寸",
+        "field_scaled": "缩放后",
+        "field_url": "完整链接",
+        "scale_label": "缩放比例",
+        "measuring": "正在读取图片尺寸…",
+        "pick_hint": "选择或上传一张图片后即可调整大小",
+        "insert": "插入"
+      }
     },
     "title": "上传"
   },

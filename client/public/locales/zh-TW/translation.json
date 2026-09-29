@@ -677,7 +677,25 @@
       "drop_now": "放開以上傳圖片",
       "invalid_type": "請上傳圖片文件",
       "preview_alt": "圖片預覽",
-      "url_placeholder": "填寫圖片 URL，或上傳一張圖片"
+      "url_placeholder": "填寫圖片 URL，或上傳一張圖片",
+      "dialog": {
+        "title": "插入圖片",
+        "tab_new": "新增",
+        "tab_existing": "已有",
+        "new_hint": "從本機選擇圖片上傳",
+        "existing_empty": "還沒有已上傳的圖片",
+        "existing_total$count": "共 {{count}} 張圖片",
+        "existing_load_more": "載入更多",
+        "field_name": "檔案名稱",
+        "field_size": "大小",
+        "field_original": "原始尺寸",
+        "field_scaled": "縮放後",
+        "field_url": "完整連結",
+        "scale_label": "縮放比例",
+        "measuring": "正在讀取圖片尺寸…",
+        "pick_hint": "選擇或上傳一張圖片後即可調整大小",
+        "insert": "插入"
+      }
     },
     "title": "上傳"
   },

@@ -419,6 +419,142 @@ describe('StorageService', () => {
         });
     });
 
+    describe('GET /images - List stored images', () => {
+        function r2AppWithObjects(
+            objects: Array<{ key: string; size: number; uploaded: Date }>,
+            uid: number | null = 1,
+        ) {
+            const listCalls: Array<{ prefix?: string; cursor?: string; limit?: number }> = [];
+            const r2Env = createMockEnv({
+                R2_BUCKET: {
+                    list: async (options: { prefix?: string; cursor?: string; limit?: number } = {}) => {
+                        listCalls.push(options);
+                        const scoped = objects.filter((object) =>
+                            options.prefix ? object.key.startsWith(options.prefix) : true,
+                        );
+                        return {
+                            objects: scoped.map((object) => ({
+                                key: object.key,
+                                size: object.size,
+                                uploaded: object.uploaded,
+                            })),
+                            truncated: false,
+                        };
+                    },
+                } as unknown as R2Bucket,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+            });
+            return { app: createAppWithEnv(r2Env, uid ?? undefined), env: r2Env, listCalls };
+        }
+
+        it('requires authentication', async () => {
+            const { app: r2App, env: r2Env, listCalls } = r2AppWithObjects([], null);
+            const res = await r2App.request('/images', { method: 'GET' }, r2Env);
+            expect(res.status).toBe(401);
+            expect(listCalls).toHaveLength(0);
+        });
+
+        it('lists images only, newest first, and skips cached objects', async () => {
+            const { app: r2App, env: r2Env } = r2AppWithObjects([
+                { key: 'images/old.png', size: 10, uploaded: new Date('2025-01-01T00:00:00Z') },
+                { key: 'images/new.webp', size: 20, uploaded: new Date('2025-06-01T00:00:00Z') },
+                { key: 'images/notes.txt', size: 5, uploaded: new Date('2025-07-01T00:00:00Z') },
+                { key: 'cache/thumb.png', size: 7, uploaded: new Date('2025-08-01T00:00:00Z') },
+            ]);
+
+            const res = await r2App.request('/images', { method: 'GET' }, r2Env);
+            expect(res.status).toBe(200);
+
+            const payload = await res.json() as {
+                success: boolean;
+                total: number;
+                cursor: string | null;
+                items: Array<{ key: string; url: string; uploadedAt: string }>;
+            };
+            expect(payload.success).toBe(true);
+            expect(payload.total).toBe(2);
+            expect(payload.cursor).toBeNull();
+            expect(payload.items.map((item) => item.key)).toEqual(['images/new.webp', 'images/old.png']);
+            expect(payload.items[0]!.url).toBe('https://images.example.com/images/new.webp');
+            expect(payload.items[0]!.uploadedAt).toBe('2025-06-01T00:00:00.000Z');
+        });
+
+        it('paginates with an offset cursor', async () => {
+            const { app: r2App, env: r2Env } = r2AppWithObjects(
+                Array.from({ length: 5 }, (_, index) => ({
+                    key: `images/${index}.png`,
+                    size: index,
+                    uploaded: new Date(2025, 0, index + 1),
+                })),
+            );
+
+            const first = await r2App.request('/images?limit=2', { method: 'GET' }, r2Env);
+            const firstPage = await first.json() as { cursor: string | null; items: Array<{ key: string }> };
+            expect(firstPage.items.map((item) => item.key)).toEqual(['images/4.png', 'images/3.png']);
+            expect(firstPage.cursor).toBe('2');
+
+            const second = await r2App.request(`/images?limit=2&cursor=${firstPage.cursor}`, { method: 'GET' }, r2Env);
+            const secondPage = await second.json() as { cursor: string | null; items: Array<{ key: string }> };
+            expect(secondPage.items.map((item) => item.key)).toEqual(['images/2.png', 'images/1.png']);
+            expect(secondPage.cursor).toBe('4');
+
+            const last = await r2App.request('/images?limit=2&cursor=4', { method: 'GET' }, r2Env);
+            const lastPage = await last.json() as { cursor: string | null; items: Array<{ key: string }> };
+            expect(lastPage.items.map((item) => item.key)).toEqual(['images/0.png']);
+            expect(lastPage.cursor).toBeNull();
+        });
+
+        it('lists images through the S3 API when no R2 binding is configured', async () => {
+            const originalFetch = globalThis.fetch;
+            const listUrls: string[] = [];
+            globalThis.fetch = (async (input: any) => {
+                const url = input instanceof Request ? input.url : String(input);
+                listUrls.push(url);
+                return new Response(
+                    `<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult>
+  <IsTruncated>false</IsTruncated>
+  <Contents><Key>images/s3.png</Key><LastModified>2025-03-01T00:00:00.000Z</LastModified><Size>42</Size></Contents>
+  <Contents><Key>images/s3.gif</Key><LastModified>2025-02-01T00:00:00.000Z</LastModified><Size>21</Size></Contents>
+</ListBucketResult>`,
+                    { status: 200, headers: { 'content-type': 'application/xml' } },
+                );
+            }) as typeof fetch;
+
+            try {
+                const s3Env = createMockEnv({
+                    R2_BUCKET: undefined,
+                    S3_FOLDER: 'images/',
+                    S3_ENDPOINT: 'https://account.r2.cloudflarestorage.com' as any,
+                    S3_BUCKET: 'rin' as any,
+                    S3_ACCESS_KEY_ID: 'key',
+                    S3_SECRET_ACCESS_KEY: 'secret',
+                    S3_ACCESS_HOST: '' as any,
+                });
+                const s3App = createAppWithEnv(s3Env, 1);
+
+                const res = await s3App.request('/images', { method: 'GET' }, s3Env);
+                expect(res.status).toBe(200);
+                const payload = await res.json() as {
+                    total: number;
+                    items: Array<{ key: string; url: string; size: number }>;
+                };
+                expect(payload.total).toBe(2);
+                expect(payload.items.map((item) => item.key)).toEqual(['images/s3.png', 'images/s3.gif']);
+                expect(payload.items[0]!.size).toBe(42);
+                expect(payload.items[0]!.url).toBe('http://localhost/api/blob/images/s3.png');
+                expect(listUrls[0]).toContain('list-type=2');
+                expect(listUrls[0]).toContain('prefix=images%2F');
+            } finally {
+                globalThis.fetch = originalFetch;
+            }
+        });
+    });
+
     describe('GET /blob/* - Stream file', () => {
         it('should stream an R2 object through the blob route', async () => {
             const r2Env = createMockEnv({

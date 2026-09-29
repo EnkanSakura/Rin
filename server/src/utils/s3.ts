@@ -63,3 +63,34 @@ export function buildS3ObjectUrl(env: Env, key: string): string {
     const urlObj = new URL(endpoint);
     return `${urlObj.protocol}//${bucket}.${urlObj.host}/${key}`;
 }
+
+/** URL of a ListObjectsV2 request (used to enumerate stored images). */
+export function buildS3ListUrl(
+    env: Env,
+    options: { prefix?: string; maxKeys?: number; continuationToken?: string } = {},
+): string {
+    const endpoint = env.S3_ENDPOINT;
+    const bucket = env.S3_BUCKET;
+    const forcePathStyle = env.S3_FORCE_PATH_STYLE === 'true';
+
+    let base: string;
+    if (forcePathStyle) {
+        base = `${endpoint.replace(/\/+$/, "")}/${bucket}`;
+    } else {
+        const urlObj = new URL(endpoint);
+        base = `${urlObj.protocol}//${bucket}.${urlObj.host}`;
+    }
+
+    const params = new URLSearchParams({ "list-type": "2" });
+    if (options.prefix) {
+        params.set("prefix", options.prefix);
+    }
+    if (options.maxKeys) {
+        params.set("max-keys", String(options.maxKeys));
+    }
+    if (options.continuationToken) {
+        params.set("continuation-token", options.continuationToken);
+    }
+
+    return `${base}/?${params.toString()}`;
+}

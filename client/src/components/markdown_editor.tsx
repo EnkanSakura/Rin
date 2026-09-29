@@ -7,6 +7,7 @@ import { FlatInset, FlatTabButton } from "@rin/ui";
 import { useAlert } from "./dialog";
 import { useColorMode } from "../utils/darkModeUtils";
 import { buildMarkdownImage, uploadImageFile } from "../utils/image-upload";
+import { ImageInsertDialog, type InsertImagePayload } from "./image-insert-dialog";
 import { Markdown } from "./markdown";
 
 
@@ -72,6 +73,8 @@ export function MarkdownEditor({ content, setContent, placeholder = "> Write you
   const isComposingRef = useRef(false);
   const [preview, setPreview] = useState<'edit' | 'preview' | 'comparison'>('edit');
   const [uploading, setUploading] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const imageDialogSelectionRef = useRef<Selection | null>(null);
   const { showAlert, AlertUI } = useAlert();
 
   async function insertImage(
@@ -308,49 +311,37 @@ export function MarkdownEditor({ content, setContent, placeholder = "> Write you
   };
 
   function UploadImageButton() {
-    const uploadRef = useRef<HTMLInputElement>(null);
     const label = t("markdown_editor.toolbar.upload_image");
-    
-    const upChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.currentTarget.files;
-      if (!files) return;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.size > 5 * 1024000) {
-          showAlert(t("upload.failed$size", { size: 5 }));
-          uploadRef.current!.value = "";
-        } else {
-          const editor = editorRef.current;
-          if (!editor) return;
-          const selection = editor.getSelection();
-          if (!selection) return;
-          setUploading(true);
-          void insertImage(file, selection, showAlert).finally(() => {
-            setUploading(false);
-          });
-        }
-      }
+    // The dialog is async, so remember where the caret was when it opened.
+    const openDialog = () => {
+      imageDialogSelectionRef.current = editorRef.current?.getSelection() ?? null;
+      setImageDialogOpen(true);
     };
-    
+
     return (
-      <>
-        <input
-          ref={uploadRef}
-          onChange={upChange}
-          className="hidden"
-          type="file"
-          accept="image/gif,image/jpeg,image/jpg,image/png"
-        />
-        <MarkdownToolButton
-          label={label}
-          icon="ri-image-add-line"
-          disabled={uploading}
-          onClick={() => uploadRef.current?.click()}
-        />
-      </>
+      <MarkdownToolButton
+        label={label}
+        icon="ri-image-add-line"
+        disabled={uploading}
+        onClick={openDialog}
+      />
     );
   }
+
+  const insertPickedImage = ({ url, name }: InsertImagePayload) => {
+    const editorInstance = editorRef.current;
+    const selection = imageDialogSelectionRef.current ?? editorInstance?.getSelection() ?? null;
+    if (!editorInstance || !selection) return;
+
+    editorInstance.executeEdits("markdown-image", [{
+      range: selection,
+      text: buildMarkdownImage(name, url),
+      forceMoveMarkers: true,
+    }]);
+    setContent(editorInstance.getValue());
+    editorInstance.focus();
+  };
 
   /* ---------------- Monaco Mount & IME Optimization ---------------- */
 
@@ -485,6 +476,12 @@ export function MarkdownEditor({ content, setContent, placeholder = "> Write you
           <Markdown content={content ? content : placeholder} />
         </div>
       </div>
+      <ImageInsertDialog
+        isOpen={imageDialogOpen}
+        onClose={() => setImageDialogOpen(false)}
+        onInsert={insertPickedImage}
+        onError={showAlert}
+      />
       <AlertUI />
     </div>
   );

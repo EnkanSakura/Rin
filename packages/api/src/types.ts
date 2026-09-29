@@ -433,6 +433,24 @@ export interface UploadResponse {
   url: string;
 }
 
+/** One stored image, as listed for the editor image picker. */
+export interface StorageImageItem {
+  key: string;
+  url: string;
+  size: number;
+  /** ISO timestamp of the upload. */
+  uploadedAt: string;
+}
+
+export interface StorageImageListResponse {
+  success: boolean;
+  items: StorageImageItem[];
+  /** Offset cursor for the next page, or null when the list is exhausted. */
+  cursor: string | null;
+  /** Total number of indexed images. */
+  total: number;
+}
+
 // ============================================================================
 // Search Types
 // ============================================================================

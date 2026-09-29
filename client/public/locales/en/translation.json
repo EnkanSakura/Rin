@@ -677,7 +677,25 @@
       "drop_now": "Drop to upload the image",
       "invalid_type": "Please upload an image file",
       "preview_alt": "Image preview",
-      "url_placeholder": "Enter an image URL, or upload an image"
+      "url_placeholder": "Enter an image URL, or upload an image",
+      "dialog": {
+        "title": "Insert image",
+        "tab_new": "New",
+        "tab_existing": "Uploaded",
+        "new_hint": "Choose an image from your device to upload",
+        "existing_empty": "No uploaded images yet",
+        "existing_total$count": "{{count}} images in total",
+        "existing_load_more": "Load more",
+        "field_name": "File name",
+        "field_size": "Size",
+        "field_original": "Original size",
+        "field_scaled": "Scaled size",
+        "field_url": "Full URL",
+        "scale_label": "Scale",
+        "measuring": "Reading image dimensions…",
+        "pick_hint": "Pick or upload an image to adjust its size",
+        "insert": "Insert"
+      }
     },
     "title": "Upload"
   },
