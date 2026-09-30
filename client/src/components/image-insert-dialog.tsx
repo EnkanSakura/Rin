@@ -8,7 +8,7 @@ import {
   DEFAULT_IMAGE_MAX_FILE_SIZE,
   DEFAULT_IMAGE_RESIZE_PERCENT,
   IMAGE_RESIZE_PRESETS,
-  buildThumbnailUrl,
+  buildStorageThumbnailUrl,
   clampImageResizePercent,
   formatImageSize,
   imageNameFromKey,
@@ -86,10 +86,10 @@ function InfoChip({ label, value, title }: { label: string; value: string; title
   );
 }
 
-/** Thumbnail with a fallback to the original image (Image Resizing may be off). */
-function Thumbnail({ url, alt }: { url: string; alt: string }) {
+/** Thumbnail rendered by the site Worker, falling back to the original object. */
+function Thumbnail({ url, storageKey, alt }: { url: string; storageKey: string; alt: string }) {
   const [failed, setFailed] = useState(false);
-  const src = failed ? stripImageUrlMetadata(url) : buildThumbnailUrl(url);
+  const src = failed ? stripImageUrlMetadata(url) : buildStorageThumbnailUrl(storageKey);
 
   return (
     <img
@@ -318,7 +318,7 @@ function ExistingImagePanel({
                 selected ? "border-theme ring-2 ring-theme/30" : "border-black/10 hover:border-theme/40 dark:border-white/10"
               }`}
             >
-              <Thumbnail url={item.url} alt={imageNameFromKey(item.key)} />
+              <Thumbnail url={item.url} storageKey={item.key} alt={imageNameFromKey(item.key)} />
               {measuringUrl === item.url ? (
                 <span className="absolute inset-0 flex items-center justify-center bg-black/40">
                   <ReactLoading type="spin" color="#ffffff" height={16} width={16} />

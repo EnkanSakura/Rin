@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+  buildWranglerCacheConfig,
+  buildWranglerImagesBindingConfig,
   buildWranglerObservabilityConfig,
   buildWranglerQueueConfig,
   buildWranglerTriggersConfig,
@@ -83,5 +85,31 @@ describe("buildWranglerObservabilityConfig", () => {
 
   it("omits observability overrides for production deploys", () => {
     expect(buildWranglerObservabilityConfig(false)).toBe("");
+  });
+});
+
+describe("buildWranglerImagesBindingConfig", () => {
+  it("emits the Images binding when enabled", () => {
+    const config = buildWranglerImagesBindingConfig(true);
+    expect(config).toContain("[images]");
+    expect(config).toContain('binding = "IMAGES"');
+    expect(Bun.TOML.parse(config)).toEqual({ images: { binding: "IMAGES" } });
+  });
+
+  it("emits nothing when disabled", () => {
+    expect(buildWranglerImagesBindingConfig(false)).toBe("");
+    expect(buildWranglerImagesBindingConfig()).toBe("");
+  });
+});
+
+describe("buildWranglerCacheConfig", () => {
+  it("enables the Worker cache by default", () => {
+    expect(buildWranglerCacheConfig()).toContain("[cache]");
+    const config = buildWranglerCacheConfig(true);
+    expect(Bun.TOML.parse(config)).toEqual({ cache: { enabled: true } });
+  });
+
+  it("emits nothing when disabled", () => {
+    expect(buildWranglerCacheConfig(false)).toBe("");
   });
 });

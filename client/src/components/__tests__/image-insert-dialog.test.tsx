@@ -186,7 +186,7 @@ describe("ImageInsertDialog", () => {
     expect(onInsert).not.toHaveBeenCalled();
   });
 
-  it("falls back to the original image when the thumbnail cannot be resized", async () => {
+  it("renders thumbnails through the site Worker and falls back to the original object", async () => {
     const { container, getByText } = renderDialog();
     fireEvent.click(getByText("upload.image.dialog.tab_existing"));
 
@@ -196,8 +196,7 @@ describe("ImageInsertDialog", () => {
       return node as HTMLImageElement;
     })) as HTMLImageElement;
 
-    expect(thumb.getAttribute("src")).toContain("/cdn-cgi/image/width=240");
-    expect(thumb.getAttribute("src")).toContain("/api/blob/images/a.webp");
+    expect(thumb.getAttribute("src")).toBe("/api/blob/thumb/images/a.webp?w=240");
 
     fireEvent.error(thumb);
     await waitFor(() => {

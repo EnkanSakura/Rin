@@ -555,6 +555,229 @@ describe('StorageService', () => {
         });
     });
 
+    describe('GET /thumb/* - Worker-generated thumbnail', () => {
+        const ORIGINAL_FETCH = globalThis.fetch;
+
+        function r2ImageEnv() {
+            return createMockEnv({
+                R2_BUCKET: {
+                    get: async (key: string) =>
+                        key === 'images/photo.png'
+                            ? {
+                                  key,
+                                  size: 4,
+                                  etag: 'etag',
+                                  httpEtag: 'etag',
+                                  uploaded: new Date('2025-01-01T00:00:00Z'),
+                                  storageClass: 'Standard',
+                                  checksums: {} as R2Checksums,
+                                  httpMetadata: { contentType: 'image/png' },
+                                  writeHttpMetadata(headers: Headers) {
+                                      headers.set('Content-Type', 'image/png');
+                                  },
+                                  body: new Blob([new Uint8Array([1, 2, 3, 4])]).stream(),
+                                  bodyUsed: false,
+                              }
+                            : null,
+                } as unknown as R2Bucket,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+            });
+        }
+
+        afterEach(() => {
+            globalThis.fetch = ORIGINAL_FETCH;
+        });
+
+        it('prefers the Cloudflare Images binding for the transform', async () => {
+            const transforms: any[] = [];
+            const outputs: any[] = [];
+            const fetchCalls: string[] = [];
+            globalThis.fetch = (async (input: any) => {
+                fetchCalls.push(input instanceof Request ? input.url : String(input));
+                return new Response('nope', { status: 415 });
+            }) as typeof fetch;
+
+            const env = createMockEnv({
+                R2_BUCKET: {
+                    get: async (key: string) =>
+                        key === 'images/photo.png'
+                            ? {
+                                  key,
+                                  size: 4,
+                                  etag: 'etag',
+                                  httpEtag: 'etag',
+                                  uploaded: new Date('2025-01-01T00:00:00Z'),
+                                  storageClass: 'Standard',
+                                  checksums: {} as R2Checksums,
+                                  writeHttpMetadata: () => {},
+                                  body: new Blob([new Uint8Array([1, 2, 3, 4])]).stream(),
+                                  bodyUsed: false,
+                              }
+                            : null,
+                } as unknown as R2Bucket,
+                IMAGES: {
+                    input: (stream: ReadableStream) => {
+                        expect(stream).toBeDefined();
+                        return {
+                            transform: (options: any) => {
+                                transforms.push(options);
+                                return {
+                                    output: async (outputOptions: any) => {
+                                        outputs.push(outputOptions);
+                                        return {
+                                            response: () =>
+                                                new Response(new Uint8Array([7, 7]), {
+                                                    status: 200,
+                                                    headers: { 'content-type': 'image/webp' },
+                                                }),
+                                            contentType: () => 'image/webp',
+                                        };
+                                    },
+                                };
+                            },
+                        };
+                    },
+                } as unknown as ImagesBinding,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+            });
+
+            const app = createAppWithEnv(env, 1);
+            const res = await app.request('/blob/thumb/images/photo.png?w=180', { method: 'GET' }, env);
+
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/webp');
+            expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([7, 7]));
+            expect(transforms).toEqual([{ width: 180, fit: 'scale-down' }]);
+            expect(outputs).toEqual([{ format: 'image/webp', quality: 75 }]);
+            // The binding handled it: no cf.image subrequest was made.
+            expect(fetchCalls).toHaveLength(0);
+        });
+
+        it('falls back to the cf.image transform when the binding fails', async () => {
+            const fetchCalls: any[] = [];
+            globalThis.fetch = (async (input: any, init?: any) => {
+                fetchCalls.push({ url: input instanceof Request ? input.url : String(input), cf: init?.cf });
+                return new Response(new Uint8Array([5, 5, 5]), {
+                    status: 200,
+                    headers: { 'content-type': 'image/webp' },
+                });
+            }) as typeof fetch;
+
+            const env = createMockEnv({
+                R2_BUCKET: {
+                    get: async () => {
+                        throw new Error('storage unavailable');
+                    },
+                } as unknown as R2Bucket,
+                IMAGES: {
+                    input: () => ({
+                        transform: () => ({
+                            output: async () => {
+                                throw new Error('images binding unavailable');
+                            },
+                        }),
+                    }),
+                } as unknown as ImagesBinding,
+                S3_ACCESS_HOST: 'https://images.example.com' as any,
+                S3_ENDPOINT: '' as any,
+                S3_BUCKET: '' as any,
+                S3_ACCESS_KEY_ID: '',
+                S3_SECRET_ACCESS_KEY: '',
+            });
+
+            const app = createAppWithEnv(env, 1);
+            const res = await app.request('/blob/thumb/images/photo.png?w=120', { method: 'GET' }, env);
+
+            expect(res.status).toBe(200);
+            expect(fetchCalls).toHaveLength(1);
+            expect(fetchCalls[0]!.url).toBe('https://images.example.com/images/photo.png');
+            expect(fetchCalls[0]!.cf?.image?.width).toBe(120);
+        });
+
+        it('asks the Worker fetch transform for a resized image', async () => {
+            const calls: Array<{ url: string; cf: any }> = [];
+            globalThis.fetch = (async (input: any, init?: any) => {
+                calls.push({
+                    url: input instanceof Request ? input.url : String(input),
+                    cf: init?.cf,
+                });
+                return new Response(new Uint8Array([9, 9, 9]), {
+                    status: 200,
+                    headers: { 'content-type': 'image/webp' },
+                });
+            }) as typeof fetch;
+
+            const env = r2ImageEnv();
+            const app = createAppWithEnv(env, 1);
+            const res = await app.request('/blob/thumb/images/photo.png?w=200', { method: 'GET' }, env);
+
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/webp');
+            expect(res.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+            expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([9, 9, 9]));
+
+            expect(calls).toHaveLength(1);
+            expect(calls[0]!.url).toBe('https://images.example.com/images/photo.png');
+            expect(calls[0]!.cf?.image).toMatchObject({
+                width: 200,
+                fit: 'scale-down',
+                format: 'webp',
+            });
+        });
+
+        it('falls back to the stored object when the transform is unavailable', async () => {
+            const calls: string[] = [];
+            globalThis.fetch = (async (input: any) => {
+                calls.push(input instanceof Request ? input.url : String(input));
+                return new Response('unsupported', { status: 415 });
+            }) as typeof fetch;
+
+            const env = r2ImageEnv();
+            const app = createAppWithEnv(env, 1);
+            const res = await app.request('/blob/thumb/images/photo.png', { method: 'GET' }, env);
+
+            expect(calls).toHaveLength(1);
+            expect(res.status).toBe(200);
+            expect(res.headers.get('content-type')).toBe('image/png');
+            // Unresized fallbacks are cached briefly so enabling Image Resizing
+            // later is picked up.
+            expect(res.headers.get('cache-control')).toBe('public, max-age=3600');
+            expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3, 4]));
+        });
+
+        it('clamps the requested width and rejects non-image keys', async () => {
+            const calls: Array<{ cf: any }> = [];
+            globalThis.fetch = (async (_input: any, init?: any) => {
+                calls.push({ cf: init?.cf });
+                return new Response(new Uint8Array([1]), {
+                    status: 200,
+                    headers: { 'content-type': 'image/webp' },
+                });
+            }) as typeof fetch;
+
+            const env = r2ImageEnv();
+            const app = createAppWithEnv(env, 1);
+
+            await app.request('/blob/thumb/images/photo.png?w=99999', { method: 'GET' }, env);
+            expect(calls[0]!.cf?.image?.width).toBe(1024);
+
+            await app.request('/blob/thumb/images/photo.png?w=abc', { method: 'GET' }, env);
+            expect(calls[1]!.cf?.image?.width).toBe(240);
+
+            const rejected = await app.request('/blob/thumb/images/notes.txt', { method: 'GET' }, env);
+            expect(rejected.status).toBe(400);
+            expect(calls).toHaveLength(2);
+        });
+    });
+
     describe('GET /blob/* - Stream file', () => {
         it('should stream an R2 object through the blob route', async () => {
             const r2Env = createMockEnv({

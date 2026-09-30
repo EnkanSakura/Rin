@@ -206,8 +206,12 @@ export function createMockDB() {
 
 /**
  * Create a mock environment for testing
+ *
+ * `IMAGES` is accepted explicitly: the generated `Env` only declares the
+ * Cloudflare Images binding once `wrangler types` ran with `[images]` in the
+ * config, while routes must handle both cases.
  */
-export function createMockEnv(overrides: Partial<Env> = {}): Env {
+export function createMockEnv(overrides: Partial<Env> & { IMAGES?: ImagesBinding } = {}): Env {
     return {
         DB: {} as D1Database,
         TASK_QUEUE: {

@@ -41,6 +41,11 @@ export async function runSetupDev(options: SetupDevOptions = {}) {
     process.exit(1);
   }
 
+  // String flags ("true"/"false"), handled like RSS_ENABLE / S3_FORCE_PATH_STYLE;
+  // a shell variable wins over .env.local.
+  const imagesBinding = (process.env.IMAGES_BINDING ?? env.IMAGES_BINDING ?? "false") === "true";
+  const workerCache = (process.env.WORKER_CACHE ?? env.WORKER_CACHE ?? "true") === "true";
+
   const wranglerContent = `#:schema node_modules/wrangler/config-schema.json
 name = "${env.WORKER_NAME || "rin-server"}"
 main = "server/src/_worker.ts"
@@ -51,7 +56,14 @@ directory = "./dist/client"
 binding = "ASSETS"
 run_worker_first = true
 not_found_handling = "single-page-application"
-
+${workerCache
+  ? `
+# Worker-level cache: transformed images (GET /api/blob/thumb) and other
+# cacheable subrequests are served from the edge cache instead of re-running.
+[cache]
+enabled = true
+`
+  : ""}
 [triggers]
 crons = ["0 * * * *", "0 3 * * *"]
 
@@ -94,6 +106,14 @@ ${env.R2_BUCKET_NAME
 binding = "R2_BUCKET"
 bucket_name = "${env.R2_BUCKET_NAME}"
 preview_bucket_name = "${env.R2_BUCKET_NAME}"`
+  : ""}
+${imagesBinding
+  ? `
+
+# Cloudflare Images binding (opt-in via IMAGES_BINDING=true): resizes images
+# inside the Worker even when the zone has no Image Resizing.
+[images]
+binding = "IMAGES"`
   : ""}
 `;
 

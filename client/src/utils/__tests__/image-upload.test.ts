@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
-  buildThumbnailUrl,
+  buildStorageThumbnailUrl,
   clampImageResizePercent,
   formatImageSize,
   imageNameFromKey,
@@ -51,21 +51,16 @@ describe("scaleImageUrl", () => {
   });
 });
 
-describe("buildThumbnailUrl", () => {
-  it("builds a Cloudflare resizing URL for relative storage paths", () => {
-    expect(buildThumbnailUrl("/api/blob/images/a.png", 240, "https://blog.test")).toBe(
-      "/cdn-cgi/image/width=240,fit=scale-down,quality=75/https://blog.test/api/blob/images/a.png",
-    );
+describe("buildStorageThumbnailUrl", () => {
+  it("points at the site Worker thumbnail route", () => {
+    expect(buildStorageThumbnailUrl("images/a.webp")).toBe("/api/blob/thumb/images/a.webp?w=240");
+    expect(buildStorageThumbnailUrl("images/a.webp", 100)).toBe("/api/blob/thumb/images/a.webp?w=100");
   });
 
-  it("keeps absolute image URLs and drops the metadata fragment", () => {
-    expect(buildThumbnailUrl("https://cdn.test/a.png#width=100&height=50", 100, "https://blog.test")).toBe(
-      "/cdn-cgi/image/width=100,fit=scale-down,quality=75/https://cdn.test/a.png",
+  it("encodes every path segment", () => {
+    expect(buildStorageThumbnailUrl("images/my photo 图.png")).toBe(
+      "/api/blob/thumb/images/my%20photo%20%E5%9B%BE.png?w=240",
     );
-  });
-
-  it("returns the source when no origin is available", () => {
-    expect(buildThumbnailUrl("/api/blob/a.png", 240, "")).toBe("/api/blob/a.png");
   });
 });
 

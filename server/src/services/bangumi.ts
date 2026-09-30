@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { AppContext, CacheImpl, DB } from "../core/hono-types";
 import { profileAsync } from "../core/server-timing";
 import { bangumiCache } from "../db/schema";
+import { getEdgeCache, runCacheWrite } from "../utils/edge-cache";
 import { createOutboundFetch } from "../utils/outbound";
 
 const DEFAULT_API_URL = "https://api.bgm.tv";
@@ -207,39 +208,9 @@ export function normalizeCoverUrl(raw: string | null | undefined): string | null
     return url.toString();
 }
 
-/** The slice of the Cloudflare Cache API this route needs. */
-interface EdgeCache {
-    match(request: Request): Promise<Response | undefined>;
-    put(request: Request, response: Response): Promise<void>;
-}
-
-/**
- * Cloudflare edge cache, or null when the runtime has no Cache API (tests,
- * Bun). Read through `globalThis` so the route stays independent of which
- * `caches` declaration the active tsconfig picks up.
- */
-function edgeCache(): EdgeCache | null {
-    const globalCaches = (globalThis as { caches?: { default?: EdgeCache } }).caches;
-    return globalCaches?.default ?? null;
-}
-
-/** Run a cache write without blocking the response when waitUntil is available. */
-function runInBackground(c: AppContext, task: Promise<unknown>): void {
-    const guarded = task.catch((error) => {
-        console.error(`[Bangumi] background task failed: ${String(error)}`);
-    });
-    try {
-        c.executionCtx.waitUntil(guarded);
-    } catch {
-        // No execution context (tests): the cache is disabled there anyway.
-        void guarded;
-    }
-}
-
 // ============================================================================
 // Route: GET /api/bangumi
 // ============================================================================
-
 export function BangumiService(): Hono {
     const app = new Hono();
 
@@ -334,7 +305,7 @@ export function BangumiService(): Hono {
             return c.text("invalid cover url");
         }
 
-        const cache = edgeCache();
+        const cache = getEdgeCache();
         const cacheKey = new Request(c.req.url, { method: "GET" });
         if (cache) {
             const hit = await cache.match(cacheKey);
@@ -383,7 +354,7 @@ export function BangumiService(): Hono {
             });
             const response = new Response(body, { status: 200, headers });
             if (cache) {
-                runInBackground(c, cache.put(cacheKey, response.clone()));
+                runCacheWrite(c, cache.put(cacheKey, response.clone()));
             }
             return response;
         } catch (error) {

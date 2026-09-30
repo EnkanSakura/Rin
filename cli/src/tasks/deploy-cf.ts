@@ -131,6 +131,36 @@ export function buildWranglerObservabilityConfig(preview = false) {
   `);
 }
 
+/**
+ * Cloudflare Images binding: Worker-side image transforms for
+ * `GET /api/blob/thumb`. Opt-in (`IMAGES_BINDING=true`).
+ */
+export function buildWranglerImagesBindingConfig(enabled = false) {
+  if (!enabled) {
+    return "";
+  }
+
+  return stripIndent(`
+    [images]
+    binding = "IMAGES"
+  `);
+}
+
+/**
+ * Worker-level cache: transformed images and other cacheable subrequests are
+ * served from the edge cache. Enabled by default (`WORKER_CACHE=false` opts out).
+ */
+export function buildWranglerCacheConfig(enabled = true) {
+  if (!enabled) {
+    return "";
+  }
+
+  return stripIndent(`
+    [cache]
+    enabled = true
+  `);
+}
+
 async function resolveR2BucketInfo(r2BucketName: string) {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!accountId) return null;
@@ -383,6 +413,22 @@ export async function runCloudflareDeploy(target: "all" | "server" | "client" = 
       bucket_name = "${r2BucketName}"
       preview_bucket_name = "${r2BucketName}"
     `)} >> wrangler.toml`.quiet();
+  }
+
+  // Cloudflare Images binding: Worker-side image transforms (GET /api/blob/thumb).
+  // Opt-in — the deployed zone (myon.top) already has Image Resizing, which the
+  // thumbnail route uses through `cf.image`. Set IMAGES_BINDING=true when the
+  // account has a Cloudflare Images subscription.
+  const imagesBindingConfig = buildWranglerImagesBindingConfig(
+    env("IMAGES_BINDING", "false") === "true",
+  );
+  if (imagesBindingConfig) {
+    await $`echo ${imagesBindingConfig} >> wrangler.toml`.quiet();
+  }
+
+  const cacheConfig = buildWranglerCacheConfig(env("WORKER_CACHE", "true") === "true");
+  if (cacheConfig) {
+    await $`echo ${cacheConfig} >> wrangler.toml`.quiet();
   }
 
   const migrationVersion = await getMigrationVersion("remote", dbName);

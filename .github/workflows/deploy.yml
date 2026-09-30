@@ -222,6 +222,15 @@ jobs:
           RSS_DESCRIPTION: ${{ vars.RSS_DESCRIPTION || '' }}
           FRONTEND_URL: ${{ vars.FRONTEND_URL || '' }}
           CACHE_STORAGE_MODE: ${{ vars.CACHE_STORAGE_MODE || 's3' }}
+          # Cloudflare Images binding: lets the Worker transform images itself
+          # (GET /api/blob/thumb, used by the editor image picker). Deployments
+          # include it by default; set the repository variable
+          # IMAGES_BINDING=false to deploy without it.
+          IMAGES_BINDING: ${{ vars.IMAGES_BINDING || 'true' }}
+          # Worker-level cache: transformed images (GET /api/blob/thumb) and other
+          # cacheable subrequests are served from the edge cache. Enabled by
+          # default; set the repository variable WORKER_CACHE=false to disable.
+          WORKER_CACHE: ${{ vars.WORKER_CACHE || 'true' }}
         run: |
           set -euo pipefail
           if [[ "${{ needs.prepare.outputs.is_production }}" == "true" ]]; then
